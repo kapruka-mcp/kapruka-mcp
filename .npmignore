@@ -1,0 +1,24 @@
+# Source code (only dist/ is published)
+src/
+
+# Config
+tsconfig.json
+.gitignore
+.npmignore
+.env
+.env.example
+
+# Tests
+tests/
+coverage/
+
+# Dev docs (keep in git, exclude from npm)
+USAGE.md
+
+# Package artifacts
+*.tgz
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
