@@ -24,6 +24,11 @@
       "types": "./dist/storage.d.ts",
       "import": "./dist/storage.js",
       "default": "./dist/storage.js"
+    },
+    "./rest": {
+      "types": "./dist/rest/index.d.ts",
+      "import": "./dist/rest/index.js",
+      "default": "./dist/rest/index.js"
     }
   },
   "files": [
@@ -38,6 +43,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "tsx watch src/cli.ts",
+    "rest": "tsx src/cli.ts --rest --port 3001",
     "start": "node dist/cli.js",
     "prepublishOnly": "npm run build"
   },
