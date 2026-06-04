@@ -184,6 +184,12 @@ export class KaprukaSDK {
 
   async addToCart(productId: string, name: string, price: number, quantity: number = 1): Promise<{ message: string; cart: CartItem[] }> {
     // Cart is always local — never calls the official server
+    if (this.isOfficialServer) {
+      throw new Error(
+        'add_to_cart is a local-only tool and is not available on the official Kapruka MCP server. ' +
+        'Use the local MCP server (kapruka-mcp/local) or the REST API for cart operations.'
+      );
+    }
     return this.callTool<{ message: string; cart: CartItem[] }>('kapruka_add_to_cart', {
       productId, name, price, quantity,
     });
@@ -191,6 +197,12 @@ export class KaprukaSDK {
 
   async getCart(): Promise<CartItem[]> {
     // Cart is always local
+    if (this.isOfficialServer) {
+      throw new Error(
+        'get_cart is a local-only tool and is not available on the official Kapruka MCP server. ' +
+        'Use the local MCP server (kapruka-mcp/local) or the REST API for cart operations.'
+      );
+    }
     return this.callTool<CartItem[]>('kapruka_get_cart', {});
   }
 

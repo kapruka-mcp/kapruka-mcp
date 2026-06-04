@@ -84,7 +84,7 @@ export class MemoryStorage implements Storage {
           cart_adds: data?.cart_adds ?? 0,
         };
       })
-      .sort((a, b) => (b.mentions + b.views + b.cart_adds) - (a.mentions + a.views + a.cart_adds))
+      .sort((a, b) => (b.mentions + b.views + b.cart_adds * 2) - (a.mentions + a.views + a.cart_adds * 2))
       .slice(0, limit);
   }
 }
@@ -98,6 +98,8 @@ export class SqliteStorage implements Storage {
     this.tableName = tableName;
 
     // Lazy-load better-sqlite3
+    // In CJS: require() works directly.
+    // In ESM: use SqliteStorage.create() factory instead.
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Database = require('better-sqlite3');
@@ -105,8 +107,31 @@ export class SqliteStorage implements Storage {
       this.init();
     } catch (_err) {
       throw new Error(
-        'better-sqlite3 is required for SqliteStorage. Install it with: npm install better-sqlite3',
+        'better-sqlite3 is required for SqliteStorage. Install it with: npm install better-sqlite3. ' +
+        'In ESM environments, use SqliteStorage.create() instead of new SqliteStorage().',
         { cause: _err }
+      );
+    }
+  }
+
+  /**
+   * Async factory: creates SqliteStorage after loading better-sqlite3 via dynamic import.
+   * Use this in ESM environments where require() is not available.
+   */
+  static async create(dbPath: string = './kapruka.db', tableName: string = 'kapruka_storage'): Promise<SqliteStorage> {
+    try {
+      const mod = await import('better-sqlite3');
+      const Database = mod.default;
+      const db = new Database(dbPath);
+      const instance = Object.create(SqliteStorage.prototype) as SqliteStorage;
+      instance.tableName = tableName;
+      instance.db = db;
+      instance.init();
+      return instance;
+    } catch (err) {
+      throw new Error(
+        'better-sqlite3 is required for SqliteStorage. Install it with: npm install better-sqlite3',
+        { cause: err }
       );
     }
   }
@@ -239,6 +264,24 @@ export function createStorage(options: {
 
   if (type === 'sqlite') {
     return new SqliteStorage(dbPath, tableName);
+  }
+
+  return new MemoryStorage();
+}
+
+/**
+ * Async version of createStorage for ESM environments.
+ * Uses SqliteStorage.create() which loads better-sqlite3 via dynamic import().
+ */
+export async function createStorageAsync(options: {
+  type?: 'memory' | 'sqlite';
+  dbPath?: string;
+  tableName?: string;
+} = {}): Promise<Storage> {
+  const { type = 'memory', dbPath, tableName } = options;
+
+  if (type === 'sqlite') {
+    return SqliteStorage.create(dbPath, tableName);
   }
 
   return new MemoryStorage();

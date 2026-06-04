@@ -279,6 +279,9 @@ export class KaprukaLocal {
     orderIds: [],
   };
 
+  /** Cached live product catalog for findSimilar in live mode */
+  private liveCatalog: Product[] = [];
+
   constructor(config: KaprukaLocalConfig = {}) {
     this.server = new McpServer(
       { name: 'kapruka-mcp-local', version: '1.0.0' },
@@ -457,9 +460,47 @@ export class KaprukaLocal {
   // Fuzzy "did you mean?" helper
   // -------------------------------------------------------------------------
 
-  private findSimilar(query: string, limit = 3): Product[] {
+  private async findSimilar(query: string, limit = 3): Promise<Product[]> {
     const q = query.toLowerCase();
-    return MOCK_PRODUCTS
+
+    if (this.useMock) {
+      return MOCK_PRODUCTS
+        .filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+        )
+        .slice(0, limit);
+    }
+
+    // Live mode: populate catalog on demand if empty
+    if (this.liveCatalog.length === 0 && this.sdk) {
+      try {
+        // Fetch a few popular categories to build a search catalog
+        const popular = ['cakes', 'flowers', 'gifts', 'electronics'];
+        for (const cat of popular) {
+          const result = await this.sdk.searchProducts('', cat).catch(() => null);
+          if (result?.products) {
+            for (const p of result.products) {
+              if (!this.liveCatalog.find(lp => lp.id === p.id)) {
+                this.liveCatalog.push(p);
+              }
+            }
+          }
+        }
+      } catch {
+        // If catalog fetch fails, fall back to mock catalog for suggestions
+        return MOCK_PRODUCTS
+          .filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q)
+          )
+          .slice(0, limit);
+      }
+    }
+
+    return this.liveCatalog
       .filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
@@ -486,7 +527,7 @@ export class KaprukaLocal {
     return query
       .toLowerCase()
       .split(/\s+/)
-      .filter(t => t.length > 2 && !KaprukaLocal.STOP_WORDS.has(t));
+      .filter(t => t.length >= 2 && !KaprukaLocal.STOP_WORDS.has(t));
   }
 
   // -------------------------------------------------------------------------
@@ -808,7 +849,7 @@ Use this after searching to get complete product information before adding to ca
             : await this.sdk!.getProduct(product_id);
 
           if (!result) {
-            const similar = this.findSimilar(product_id);
+            const similar = await this.findSimilar(product_id);
             return this.errorContent(
               TOOL_NAMES.get_product,
               `Product "${product_id}" not found.`,
@@ -919,7 +960,7 @@ Note: The cart is local only -- it is NOT sent to Kapruka until you call kapruka
         this.storage.incrementAnalytics(productId, 'cart_add');
 
         return this.textContent(JSON.stringify({
-          message: `Added ${qty} +� ${name} to your cart.`,
+          message: `Added ${qty} x ${name} to your cart.`,
           cart: this.context.cartItems,
           cartTotal: `LKR ${this.context.cartTotal.toLocaleString()}`,
           itemCount: this.context.cartItems.length,
@@ -1091,9 +1132,9 @@ Always call this before creating an order when the customer specifies a delivery
             estimatedDays: result.estimated_days,
             note: result.available
               ? result.fee === 0
-                ? '=��� Free delivery to this city!'
+                ? 'Free delivery to this city!'
                 : `Delivery fee: LKR ${result.fee}. Arrives in ${result.estimated_days} day${result.estimated_days !== 1 ? 's' : ''}.`
-              : 'G��n+� Perishable products cannot be delivered to this city due to the distance.',
+              : 'Perishable products cannot be delivered to this city due to the distance.',
           });
 
           this.cacheSet(cacheKey, text);
@@ -1207,7 +1248,7 @@ Rate limit: 30 orders per hour.`,
             items: result.items,
             status: result.status,
             expiresAt: result.expires_at,
-            message: `G�� Order created! Complete payment at the checkout URL within 60 minutes to confirm your order.`,
+            message: `Order created! Complete payment at the checkout URL within 60 minutes to confirm your order.`,
           }));
         } catch (err) {
           const error = err instanceof Error ? err : new Error(String(err));
@@ -1228,7 +1269,7 @@ Rate limit: 30 orders per hour.`,
       TOOL_NAMES.track_order,
       {
         description: `Track the status and delivery progress of an existing order.
-Returns: current status (pending G�� processing G�� dispatched G�� delivered), item list, and timestamps.
+Returns: current status (pending -> processing -> dispatched -> delivered), item list, and timestamps.
 Use the order ID from a create_order response or from the customer's confirmation email.`,
         inputSchema: TrackOrderSchema,
       },

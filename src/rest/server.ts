@@ -94,8 +94,12 @@ class SessionManager {
   delete(id: string): void {
     const session = this.sessions.get(id);
     if (session) {
-      session.client.close().catch(() => {});
-      session.local.shutdown().catch(() => {});
+      session.client.close().catch((err) => {
+        process.stderr.write(`[Kapruka] Error closing client for session ${id}: ${err instanceof Error ? err.message : err}\n`);
+      });
+      session.local.shutdown().catch((err) => {
+        process.stderr.write(`[Kapruka] Error shutting down local for session ${id}: ${err instanceof Error ? err.message : err}\n`);
+      });
       this.sessions.delete(id);
     }
   }
@@ -218,7 +222,7 @@ async function handleRequest(
 
     // Set session ID in response header
     res.setHeader('X-Session-ID', sid);
-    const toolName = PATH_TO_TOOL[path];
+    const toolName = PATH_TO_TOOL[path] ?? (path === '/api/tool' ? (body as { tool?: string })?.tool : undefined);
     sendSuccess(res, result, sid, toolName);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));

@@ -33,10 +33,19 @@ export function sendError(res: ServerResponse, status: number, error: string, se
   sendJson(res, status, { success: false, error, sessionId, ...(tool ? { tool } : {}), ...(suggestion ? { suggestion } : {}) });
 }
 
-export function readBody(req: IncomingMessage): Promise<string> {
+export function readBody(req: IncomingMessage, maxBytes: number = 1_048_576): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (c) => chunks.push(c));
+    let totalBytes = 0;
+    req.on('data', (c) => {
+      totalBytes += c.length;
+      if (totalBytes > maxBytes) {
+        req.destroy();
+        reject(new Error(`Request body exceeds ${maxBytes} byte limit`));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks).toString()));
     req.on('error', reject);
   });
@@ -63,11 +72,21 @@ async function callTool(session: Session, toolName: string, args: Record<string,
     try {
       const parsed = JSON.parse(text);
       throw Object.assign(new Error(parsed.error), { suggestion: parsed.suggestion, tool: parsed.tool });
-    } catch {
-      throw new Error(text);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw Object.assign(new Error(text), { cause: e });
+      }
+      throw e;
     }
   }
-  return JSON.parse(content[0].text);
+
+  const raw = content[0].text;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // MCP server returned non-JSON (e.g. markdown). Return as-is.
+    return raw;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +195,12 @@ export async function handleHealth(_ctx: RouteContext): Promise<unknown> {
 async function handleSessionGet(ctx: RouteContext): Promise<unknown> {
   const mcpResult = await ctx.session.client.callTool({ name: 'kapruka_get_cart', arguments: {} });
   const content = mcpResult.content as Array<{ type: string; text: string }>;
-  const cart = JSON.parse(content[0].text);
+  let cart: unknown;
+  try {
+    cart = JSON.parse(content[0].text);
+  } catch {
+    cart = content[0].text;
+  }
   return {
     sessionId: ctx.session.id,
     cart,
