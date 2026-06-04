@@ -126,6 +126,7 @@ export interface KaprukaLocalConfig {
   mock?: boolean;
   compact?: boolean;
   storage?: Storage;
+  currencyApiUrl?: string;
   events?: {
     onToolCall?: (tool: string, args: Record<string, unknown>) => void;
     onError?: (tool: string, error: Error) => void;

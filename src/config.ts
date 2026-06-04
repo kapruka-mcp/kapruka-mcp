@@ -1,6 +1,7 @@
 // Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
 
 export const KAPRUKA_MCP_URL = 'https://mcp.kapruka.com/mcp';
+export const FRANKFURTER_RATE_URL = 'https://api.frankfurter.dev/v2/rate/USD/LKR';
 
 export const TOOL_NAMES = {
   search_products: 'kapruka_search_products',

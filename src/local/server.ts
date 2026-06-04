@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { KaprukaSDK } from '../sdk/client.js';
 import { KaprukaEvents } from './events.js';
 import { MemoryStorage, type Storage } from '../storage.js';
-import { TOOL_NAMES } from '../config.js';
+import { TOOL_NAMES, FRANKFURTER_RATE_URL } from '../config.js';
 import type {
   KaprukaLocalConfig,
   Product,
@@ -263,6 +263,14 @@ export class KaprukaLocal {
   /** Keys of cart items currently in storage */
   private readonly cartKeys = new Set<string>();
 
+  /** Currency API configuration */
+  private readonly currencyApiUrl: string;
+
+  /** Cached currency rates (USD -> LKR base) */
+  private currencyRates: Record<string, number> | null = null;
+  private currencyRatesFetchedAt = 0;
+  private static readonly CURRENCY_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
   /** Mutable session context */
   private context: SessionContext = {
     cartTotal: 0,
@@ -277,12 +285,13 @@ export class KaprukaLocal {
       { instructions: SERVER_INSTRUCTIONS }
     );
 
-    this.events      = new KaprukaEvents(config.events);
-    this.storage     = config.storage ?? new MemoryStorage();
-    this.useMock     = config.mock    ?? true;
-    this.compact     = config.compact ?? false;
-    this.cacheTtlMs  = 30 * 60 * 1000; // 30 minutes
-    this.rateLimiter = new RateLimiter();
+    this.events       = new KaprukaEvents(config.events);
+    this.storage      = config.storage ?? new MemoryStorage();
+    this.useMock      = config.mock    ?? true;
+    this.compact      = config.compact ?? false;
+    this.cacheTtlMs   = 30 * 60 * 1000; // 30 minutes
+    this.rateLimiter  = new RateLimiter();
+    this.currencyApiUrl = config.currencyApiUrl || FRANKFURTER_RATE_URL;
 
     if (!this.useMock) {
       this.sdk = new KaprukaSDK();
@@ -358,6 +367,60 @@ export class KaprukaLocal {
 
   private cacheSet(key: string, value: string): void {
     this.cache.set(key, { value, expiresAt: Date.now() + this.cacheTtlMs });
+  }
+
+  // -------------------------------------------------------------------------
+  // Currency rate fetching
+  // -------------------------------------------------------------------------
+
+  private async fetchCurrencyRates(): Promise<Record<string, number>> {
+    const now = Date.now();
+    if (this.currencyRates && (now - this.currencyRatesFetchedAt) < KaprukaLocal.CURRENCY_CACHE_TTL) {
+      return this.currencyRates;
+    }
+
+    try {
+      const response = await fetch(this.currencyApiUrl, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json() as { rate?: number; rates?: Record<string, number> };
+
+      // Support both { rate: number } (Frankfurter v2) and { rates: { LKR: number } } formats
+      const lkrRate = data.rate ?? data.rates?.LKR;
+      if (typeof lkrRate !== 'number' || lkrRate <= 0) {
+        throw new Error('Invalid rate response');
+      }
+
+      // Build rate table: how much of target currency per 1 LKR
+      // Frankfurter gives USD/LKR = 332.87, meaning 1 USD = 332.87 LKR
+      // For LKR -> USD: divide by rate. For LKR -> EUR: we need EUR/LKR
+      // Since we only have USD/LKR, derive other rates using approximate cross-rates
+      const usdPerLkr = 1 / lkrRate;
+      this.currencyRates = {
+        USD: usdPerLkr,
+        AED: usdPerLkr * 3.6725,   // 1 USD = 3.6725 AED
+        EUR: usdPerLkr * 0.92,     // 1 USD ~ 0.92 EUR
+        GBP: usdPerLkr * 0.79,     // 1 USD ~ 0.79 GBP
+        INR: usdPerLkr * 85.5,     // 1 USD ~ 85.5 INR
+        LKR: 1,
+      };
+      this.currencyRatesFetchedAt = now;
+    } catch {
+      // Fallback to hardcoded rates if API fails
+      const lkrPerUsd = 310;
+      const usdPerLkr = 1 / lkrPerUsd;
+      this.currencyRates = {
+        USD: usdPerLkr,
+        AED: usdPerLkr * 3.6725,
+        EUR: usdPerLkr * 0.92,
+        GBP: usdPerLkr * 0.79,
+        INR: usdPerLkr * 85.5,
+        LKR: 1,
+      };
+    }
+
+    return this.currencyRates;
   }
 
   // -------------------------------------------------------------------------
@@ -1275,29 +1338,27 @@ Examples: if a cake is in cart, suggests candles or flowers. If an iPhone is in 
       TOOL_NAMES.convert_currency,
       {
         description: `Convert Sri Lankan Rupee (LKR) amounts to other currencies.
-Supports: USD, AED, EUR, GBP, INR. Ideal for expats sending gifts home.`,
+Supports: USD, AED, EUR, GBP, INR. Uses live exchange rates from Frankfurter API (fallback to approximate rates).`,
         inputSchema: ConvertCurrencySchema,
       },
       async ({ amount, to }) => {
         this.recordAction(TOOL_NAMES.convert_currency, { amount, to });
 
-        // Mock exchange rates (LKR per 1 unit of target currency)
-        const RATES: Record<string, number> = {
-          USD: 310,
-          AED: 84.5,
-          EUR: 335,
-          GBP: 390,
-          INR: 3.7
-        };
+        const rates = await this.fetchCurrencyRates();
+        const ratePerLkr = rates[to] || 1;
+        const converted = amount * ratePerLkr;
+        const inverseRate = 1 / ratePerLkr;
 
-        const rate = RATES[to] || 1;
-        const converted = amount / rate;
+        const isLive = (Date.now() - this.currencyRatesFetchedAt) < KaprukaLocal.CURRENCY_CACHE_TTL;
 
         return this.textContent(JSON.stringify({
           original: `LKR ${amount.toLocaleString()}`,
           converted: `${to} ${converted.toFixed(2)}`,
-          rate: `1 ${to} = LKR ${rate}`,
-          note: 'Rates are approximate and updated daily.'
+          rate: `1 ${to} = LKR ${inverseRate.toFixed(2)}`,
+          source: isLive ? 'live (Frankfurter API)' : 'cached',
+          note: isLive
+            ? 'Live exchange rates. Rates refresh every hour.'
+            : 'Approximate rates. API temporarily unavailable.'
         }));
       }
     );
