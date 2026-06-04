@@ -17,12 +17,28 @@ Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.k
 |---|---|---|
 | TypeScript types | ❌ | ✅ Full types for all 14 tools |
 | Offline / mock mode | ❌ | ✅ 136-product catalog, no internet needed |
+| Live mode | ✅ 7 tools | ✅ All 14 tools (7 server + 7 composed) |
+| Response format | Markdown text | Structured JSON |
 | Cart persistence | ❌ Stateless | ✅ Memory or SQLite |
 | Response caching | ❌ | ✅ 30-minute TTL cache |
 | Rate limit tracking | ❌ | ✅ 60 req/min, 30 orders/hr |
 | Event hooks | ❌ | ✅ `onToolCall`, `onError` |
 | Perishable delivery logic | ❌ | ✅ Cakes/flowers blocked to remote cities |
 | `npm install` | ❌ | ✅ One command |
+
+### Live mode compatibility
+
+The SDK works against the official Kapruka MCP server (`mcp.kapruka.com`). The server returns markdown — the SDK parses it into structured JSON automatically. All 7 official tools work, plus 7 extra tools built on top:
+
+| Official tools (7) | Extra tools (7) — composed from official |
+|---|---|
+| `search_products` | `get_alternatives` (uses search + scoring) |
+| `get_product` | `validate_shipping` (uses list_delivery_cities) |
+| `list_categories` | `get_recommendations` (uses search by category) |
+| `list_delivery_cities` | `convert_currency` (pure math) |
+| `check_delivery` | `add_to_cart` (local storage) |
+| `create_order` | `get_cart` (local storage) |
+| `track_order` | `get_analytics` (local storage) |
 
 ---
 

@@ -566,7 +566,7 @@ export class KaprukaLocal {
   // Shipping address validation
   // -------------------------------------------------------------------------
 
-  private validateShippingAddress(address: ShippingAddress): ShippingValidation {
+  private async validateShippingAddress(address: ShippingAddress, liveCities?: string[]): Promise<ShippingValidation> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -582,20 +582,32 @@ export class KaprukaLocal {
 
     // --- City validation ---
     const cityLower = address.city.toLowerCase().trim();
-    const cityMap: Record<string, string> = {
-      colombo: 'COL', dehiwala: 'DEH', 'mount lavinia': 'DEH',
-      negombo: 'NEG', 'sri jayawardenepura': 'SRI', kotte: 'SRI',
-      kandy: 'KAN', kurunegala: 'KUR', galle: 'GAL', matara: 'MAT',
-      ratnapura: 'RAT', anuradhapura: 'ANU', polonnaruwa: 'POL',
-      trincomalee: 'TRI', jaffna: 'JAF', vavuniya: 'VAN', 'nuwara eliya': 'NUW',
-    };
-    const matchedCityCode = cityMap[cityLower];
 
-    if (!matchedCityCode) {
-      const validCities = Object.keys(cityMap).map(c => c.replace(/\b\w/g, l => l.toUpperCase()));
-      errors.push(
-        `Unknown delivery city: "${address.city}". Valid cities: ${validCities.slice(0, 10).join(', ')}, etc.`
-      );
+    if (liveCities && liveCities.length > 0) {
+      // Live mode: validate against real server cities
+      const matched = liveCities.some(c => c.toLowerCase() === cityLower);
+      if (!matched) {
+        errors.push(
+          `Unknown delivery city: "${address.city}". Valid cities: ${liveCities.slice(0, 10).join(', ')}, etc.`
+        );
+      }
+    } else {
+      // Mock mode: validate against local map
+      const cityMap: Record<string, string> = {
+        colombo: 'COL', dehiwala: 'DEH', 'mount lavinia': 'DEH',
+        negombo: 'NEG', 'sri jayawardenepura': 'SRI', kotte: 'SRI',
+        kandy: 'KAN', kurunegala: 'KUR', galle: 'GAL', matara: 'MAT',
+        ratnapura: 'RAT', anuradhapura: 'ANU', polonnaruwa: 'POL',
+        trincomalee: 'TRI', jaffna: 'JAF', vavuniya: 'VAN', 'nuwara eliya': 'NUW',
+      };
+      const matchedCityCode = cityMap[cityLower];
+
+      if (!matchedCityCode) {
+        const validCities = Object.keys(cityMap).map(c => c.replace(/\b\w/g, l => l.toUpperCase()));
+        errors.push(
+          `Unknown delivery city: "${address.city}". Valid cities: ${validCities.slice(0, 10).join(', ')}, etc.`
+        );
+      }
     }
 
     // --- Postal code validation ---
@@ -1052,7 +1064,18 @@ Always call this first to prevent order failures from invalid addresses.`,
           postal_code, delivery_instructions,
         };
 
-        const result = this.validateShippingAddress(shippingAddress);
+        // In live mode, fetch real cities from the server for validation
+        let liveCities: string[] | undefined;
+        if (!this.useMock && this.sdk) {
+          try {
+            const cities = await this.sdk.listDeliveryCities();
+            liveCities = cities.map(c => c.name);
+          } catch {
+            // Fall back to local city map if server unreachable
+          }
+        }
+
+        const result = await this.validateShippingAddress(shippingAddress, liveCities);
 
         // Store validated address in session context for order creation
         if (result.valid) {
@@ -1208,12 +1231,17 @@ Examples: if a cake is in cart, suggests candles or flowers. If an iPhone is in 
 
         const recommendations: Product[] = [];
         for (const item of this.context.cartItems) {
-          // Rule-based upselling logic
-          let query = '';
-          if (item.productId.includes('CAKE')) query = 'topper candles';
-          if (item.productId.includes('FLW')) query = 'vase greeting card';
-          if (item.productId.includes('ELC')) query = 'case protector';
-          if (item.productId.includes('GRC')) query = 'snacks beverages';
+          // Rule-based upselling — uses category (works for both mock and live IDs)
+          let query: string | undefined;
+          const cat = item.productId.toLowerCase();
+          if (cat.includes('cake') || cat.includes('cak')) query = 'topper candles';
+          else if (cat.includes('flw') || cat.includes('flower') || cat.includes('rose')) query = 'vase greeting card';
+          else if (cat.includes('elc') || cat.includes('elect') || cat.includes('phone') || cat.includes('apple')) query = 'case protector charger';
+          else if (cat.includes('grc') || cat.includes('grocery') || cat.includes('snack')) query = 'snacks beverages';
+          else if (cat.includes('toy') || cat.includes('kid')) query = 'board game puzzle';
+          else if (cat.includes('beauty') || cat.includes('perfume')) query = 'skincare gift set';
+          else if (cat.includes('book')) query = 'bookmark pen stationery';
+          else query = 'gift hamper';
 
           if (query) {
             const matches = await this.findAlternatives(query, undefined, undefined, limit);
