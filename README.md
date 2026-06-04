@@ -1,7 +1,7 @@
 # kapruka-mcp
 
 [![npm version](https://img.shields.io/npm/v/kapruka-mcp.svg)](https://www.npmjs.com/package/kapruka-mcp)
-[![npm installs](https://badgen.net/npm/installments/npm/kapruka-mcp)](https://www.npmjs.com/package/kapruka-mcp)
+[![npm](https://img.shields.io/badge/npm-kapruka--mcp-blue.svg)](https://www.npmjs.com/package/kapruka-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
