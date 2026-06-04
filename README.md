@@ -9,6 +9,8 @@ A fast, lightweight, and stateful TypeScript SDK for building conversational com
 
 Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.kapruka.com/contactUs/agentChallenge.html)** and anyone building AI shopping agents for the Sri Lankan market.
 
+![kapruka-mcp Architecture](public/diagram.png)
+
 ---
 
 ## Why use this instead of the raw MCP URL?
