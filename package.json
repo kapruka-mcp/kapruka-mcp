@@ -30,6 +30,8 @@
   ],
   "scripts": {
     "build": "tsc",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "tsx watch src/cli.ts",
@@ -74,10 +76,13 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^20.0.0",
+    "eslint": "^10.4.1",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.60.1",
     "vitest": "^4.1.8"
   }
 }

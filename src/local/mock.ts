@@ -1169,7 +1169,7 @@ export function mockListDeliveryCities(): DeliveryCity[] {
  * - High-value items (electronics, appliances): +1 day for security handling.
  * - Colombo (COL) always has free same-day delivery.
  */
-export function mockCheckDelivery(city: string, product_id: string, delivery_date?: string): DeliveryCheck | null {
+export function mockCheckDelivery(city: string, product_id: string, _delivery_date?: string): DeliveryCheck | null {
   const cityObj = MOCK_DELIVERY_CITIES.find(c => c.id === city.toUpperCase());
   const product = MOCK_PRODUCTS.find(p => p.id === product_id);
 

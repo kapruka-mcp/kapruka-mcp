@@ -10,13 +10,11 @@ import type {
   KaprukaLocalConfig,
   Product,
   Category,
-  DeliveryCity,
   Order,
   SearchResult,
   CartItem,
   ShippingAddress,
   ShippingValidation,
-  CreateOrderRequest,
 } from '../sdk/types.js';
 import {
   MOCK_PRODUCTS,
@@ -785,7 +783,7 @@ Returns: list of alternative products with visual descriptions for voice-friendl
         if (cached) return this.textContent(cached);
 
         try {
-          let alternatives = await this.findAlternatives(query, category, maxPrice, limit);
+          const alternatives = await this.findAlternatives(query, category, maxPrice, limit);
 
           if (alternatives.length === 0) {
             // Fall back to broader search -- try each word individually
@@ -1059,7 +1057,7 @@ Always call this first to prevent order failures from invalid addresses.`,
 
         // Store validated address in session context for order creation
         if (result.valid) {
-          this.context.lastViewedProduct = this.context.lastViewedProduct; // preserve
+          // reserved for future use
         }
 
         return this.textContent(JSON.stringify({

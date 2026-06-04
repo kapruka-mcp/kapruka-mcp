@@ -6,7 +6,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { KaprukaLocal } from '../src/local/server.js';
 import { KaprukaSDK } from '../src/sdk/client.js';
 import { MemoryStorage } from '../src/storage.js';
-import type { Product, SearchResult, Category, DeliveryCity, CartItem } from '../src/sdk/types.js';
+import type { CartItem } from '../src/sdk/types.js';
 
 /**
  * KaprukaSDK tests.

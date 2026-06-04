@@ -1,5 +1,12 @@
 // Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
 
+export interface ProductAnalytics {
+  product_id: string;
+  mentions: number;
+  views: number;
+  cart_adds: number;
+}
+
 export interface Storage {
   get<T>(key: string): T | null;
   set<T>(key: string, value: T, ttlMs?: number): void;
@@ -9,7 +16,7 @@ export interface Storage {
   size(): number;
   keys(prefix?: string): string[];
   incrementAnalytics(productId: string, type: 'mention' | 'view' | 'cart_add'): void;
-  getAnalytics(limit?: number): any[];
+  getAnalytics(limit?: number): ProductAnalytics[];
 }
 
 export class MemoryStorage implements Storage {
@@ -59,22 +66,31 @@ export class MemoryStorage implements Storage {
 
   incrementAnalytics(productId: string, type: 'mention' | 'view' | 'cart_add'): void {
     const key = `analytics:${productId}`;
-    const stats = this.get<any>(key) || { mentions: 0, views: 0, cart_adds: 0 };
+    const stats = this.get<ProductAnalytics>(key) || { product_id: productId, mentions: 0, views: 0, cart_adds: 0 };
     if (type === 'mention') stats.mentions++;
     if (type === 'view') stats.views++;
     if (type === 'cart_add') stats.cart_adds++;
     this.set(key, stats);
   }
 
-  getAnalytics(limit: number = 10): any[] {
+  getAnalytics(limit: number = 10): ProductAnalytics[] {
     return this.keys('analytics:')
-      .map(k => ({ product_id: k.split(':')[1], ...this.get<any>(k) }))
+      .map(k => {
+        const data = this.get<ProductAnalytics>(k);
+        return {
+          product_id: k.split(':')[1],
+          mentions: data?.mentions ?? 0,
+          views: data?.views ?? 0,
+          cart_adds: data?.cart_adds ?? 0,
+        };
+      })
       .sort((a, b) => (b.mentions + b.views + b.cart_adds) - (a.mentions + a.views + a.cart_adds))
       .slice(0, limit);
   }
 }
 
 export class SqliteStorage implements Storage {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   private db: import('better-sqlite3').Database | null = null;
   private tableName: string;
 
@@ -87,9 +103,10 @@ export class SqliteStorage implements Storage {
       const Database = require('better-sqlite3');
       this.db = new Database(dbPath);
       this.init();
-    } catch (err) {
+    } catch (_err) {
       throw new Error(
-        'better-sqlite3 is required for SqliteStorage. Install it with: npm install better-sqlite3'
+        'better-sqlite3 is required for SqliteStorage. Install it with: npm install better-sqlite3',
+        { cause: _err }
       );
     }
   }
@@ -197,12 +214,12 @@ export class SqliteStorage implements Storage {
     `).run(productId);
   }
 
-  getAnalytics(limit: number = 10): any[] {
+  getAnalytics(limit: number = 10): ProductAnalytics[] {
     return this.db!.prepare(`
-      SELECT * FROM product_analytics 
+      SELECT product_id, mentions, views, cart_adds FROM product_analytics 
       ORDER BY (mentions + views + cart_adds * 2) DESC 
       LIMIT ?
-    `).all(limit);
+    `).all(limit) as ProductAnalytics[];
   }
 
   close(): void {

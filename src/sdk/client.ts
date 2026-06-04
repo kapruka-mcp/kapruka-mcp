@@ -52,15 +52,15 @@ export class KaprukaSDK {
       if (!this.connected) {
         await this.connect();
       }
-    } catch (connError) {
-      throw new Error(`The Kapruka server is currently unreachable. Please check your internet connection or the server status URL: ${this.mcpUrl}`);
+    } catch (_connError) {
+      throw new Error(`The Kapruka server is currently unreachable. Please check your internet connection or the server status URL: ${this.mcpUrl}`, { cause: _connError });
     }
 
     let result;
     try {
       result = await this.client.callTool({ name, arguments: args });
     } catch (toolError) {
-      throw new Error(`Failed to communicate with Kapruka MCP: ${toolError instanceof Error ? toolError.message : 'Unknown connection error'}`);
+      throw new Error(`Failed to communicate with Kapruka MCP: ${toolError instanceof Error ? toolError.message : 'Unknown connection error'}`, { cause: toolError });
     }
 
     if (result.isError) {
