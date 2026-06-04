@@ -31,11 +31,6 @@ async function main(): Promise<void> {
   const shutdown = async (): Promise<void> => {
     console.error('[Kapruka] Shutting down...');
     try {
-      await local.shutdown();
-    } catch {
-      // Ignore shutdown errors
-    }
-    try {
       await server.close();
     } catch {
       // Ignore close errors
