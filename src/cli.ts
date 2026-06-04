@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { KaprukaLocal } from './local/server.js';

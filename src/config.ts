@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 export const KAPRUKA_MCP_URL = 'https://mcp.kapruka.com/mcp';
 
 export const TOOL_NAMES = {

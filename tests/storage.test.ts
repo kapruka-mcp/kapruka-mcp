@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryStorage } from '../src/storage.js';
 

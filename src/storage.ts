@@ -1,10 +1,4 @@
-/**
- * Storage abstraction for kapruka-mcp
- *
- * Provides a common interface for storing data with two implementations:
- * - MemoryStorage: Fast in-memory storage (default)
- * - SqliteStorage: Persistent SQLite storage (requires better-sqlite3)
- */
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
 
 export interface Storage {
   get<T>(key: string): T | null;
@@ -18,10 +12,6 @@ export interface Storage {
   getAnalytics(limit?: number): any[];
 }
 
-/**
- * Fast in-memory storage using Map
- * Default storage - no dependencies required
- */
 export class MemoryStorage implements Storage {
   private store = new Map<string, { data: unknown; expiresAt?: number }>();
 
@@ -84,10 +74,6 @@ export class MemoryStorage implements Storage {
   }
 }
 
-/**
- * Persistent SQLite storage
- * Requires: npm install better-sqlite3
- */
 export class SqliteStorage implements Storage {
   private db: import('better-sqlite3').Database | null = null;
   private tableName: string;
@@ -227,9 +213,6 @@ export class SqliteStorage implements Storage {
   }
 }
 
-/**
- * Create a storage instance based on configuration
- */
 export function createStorage(options: {
   type?: 'memory' | 'sqlite';
   dbPath?: string;

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { KAPRUKA_MCP_URL } from '../config.js';

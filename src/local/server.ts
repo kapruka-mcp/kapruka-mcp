@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) â€” https://github.com/k-rithik04
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { KaprukaSDK } from '../sdk/client.js';
@@ -27,38 +29,36 @@ import {
   mockTrackOrder,
 } from './mock.js';
 
-// ---------------------------------------------------------------------------
 // Server-level instructions (surfaced to the AI client)
-// ---------------------------------------------------------------------------
 
 const SERVER_INSTRUCTIONS = `\
 You are a Kapruka shopping assistant for Sri Lanka's largest e-commerce platform.
 
 ## Recommended Shopping Workflow
-1. kapruka_search_products    GÇö find products by keyword (use "q" param) or category
-2. kapruka_get_product        GÇö fetch full details by product_id (price, stock, image, visual description)
-3. kapruka_get_alternatives   GÇö find similar products when nothing matches or item is out of stock
-4. kapruka_check_delivery     GÇö verify availability by city, product_id, and delivery_date
-5. kapruka_add_to_cart        GÇö add items (persists for this session)
-6. kapruka_get_cart           GÇö review cart before checkout
-7. kapruka_validate_shipping  GÇö validate address & phone BEFORE creating the order
-8. kapruka_create_order       GÇö generate a 60-minute price-locked checkout link (requires cart, recipient, delivery, sender)
-9. kapruka_track_order        GÇö track an existing order by order_number
+1. kapruka_search_products    -- find products by keyword (use "q" param) or category
+2. kapruka_get_product        -- fetch full details by product_id (price, stock, image, visual description)
+3. kapruka_get_alternatives   -- find similar products when nothing matches or item is out of stock
+4. kapruka_check_delivery     -- verify availability by city, product_id, and delivery_date
+5. kapruka_add_to_cart        -- add items (persists for this session)
+6. kapruka_get_cart           -- review cart before checkout
+7. kapruka_validate_shipping  -- validate address & phone BEFORE creating the order
+8. kapruka_create_order       -- generate a 60-minute price-locked checkout link (requires cart, recipient, delivery, sender)
+9. kapruka_track_order        -- track an existing order by order_number
 
 ## Categories
-flowers -+ cakes -+ gifts -+ electronics -+ toys -+ fashion -+ grocery -+ appliances -+ beauty -+ books -+ fruits -+ beverages
+flowers | cakes | gifts | electronics | toys | fashion | grocery | appliances | beauty | books | fruits | beverages
 
 ## Delivery Cities
-COL (Colombo) -+ DEH (Dehiwala) -+ NEG (Negombo) -+ SRI (Sri Jayawardenepura)
-KAN (Kandy) -+ KUR (Kurunegala) -+ GAL (Galle) -+ MAT (Matara) -+ RAT (Ratnapura)
-ANU (Anuradhapura) -+ POL (Polonnaruwa) -+ TRI (Trincomalee) -+ BAT (Batticaloa)
-JAF (Jaffna) -+ VAN (Vavuniya) -+ NUW (Nuwara Eliya)
+COL (Colombo) | DEH (Dehiwala) | NEG (Negombo) | SRI (Sri Jayawardenepura)
+KAN (Kandy) | KUR (Kurunegala) | GAL (Galle) | MAT (Matara) | RAT (Ratnapura)
+ANU (Anuradhapura) | POL (Polonnaruwa) | TRI (Trincomalee) | BAT (Batticaloa)
+JAF (Jaffna) | VAN (Vavuniya) | NUW (Nuwara Eliya)
 
 ## Key Rules
 - All prices are in Sri Lankan Rupees (LKR).
 - Perishables (cakes, flowers, fruits) cannot be delivered to 3+ day cities (JAF, TRI, BAT, VAN, POL).
 - Electronics and appliances require +1 extra day for security handling.
-- Guest checkout links expire in 60 minutes GÇö create the order only when the customer is ready to pay.
+- Guest checkout links expire in 60 minutes -- create the order only when the customer is ready to pay.
 - The cart is local to this session; it is NOT synced with Kapruka until create_order is called.
 - Official rate limits: 60 requests/minute, 30 orders/hour.
 - ALWAYS call kapruka_validate_shipping before kapruka_create_order to prevent failed orders.
@@ -67,7 +67,7 @@ JAF (Jaffna) -+ VAN (Vavuniya) -+ NUW (Nuwara Eliya)
 - For kapruka_track_order, use "order_number" (not "orderId").
 
 ## Multimodal & Voice Tips
-- Every product includes a "visual_description" field GÇö use it to describe products to blind users or over voice calls.
+- Every product includes a "visual_description" field -- use it to describe products to blind users or over voice calls.
 - When a search returns 0 results, ALWAYS call kapruka_get_alternatives before telling the user "nothing found".
 - The visual_description provides rich detail about colours, materials, sizes, and textures.`;
 
@@ -104,7 +104,7 @@ const AddToCartSchema = {
 };
 
 const CheckDeliverySchema = {
-  city:    z.string().describe('City code GÇö e.g. COL, KAN, JAF. Use kapruka_list_delivery_cities for the full list.'),
+  city:    z.string().describe('City code (e.g. COL, KAN, JAF). Use kapruka_list_delivery_cities for the full list.'),
   product_id: z.string().describe('Product ID to check delivery constraints for'),
   delivery_date: z.string().optional().describe('Delivery date in YYYY-MM-DD format (optional, defaults to today)'),
 };
@@ -166,7 +166,7 @@ const ValidateShippingSchema = {
   phone: z.string().describe('Sri Lankan phone number in any common format: 0771234567, +94771234567, 077-123-4567'),
   address_line1: z.string().min(5).describe('Street address or house number and street (e.g., "42 Temple Road")'),
   address_line2: z.string().optional().describe('Apartment, suite, floor, or additional address info (optional)'),
-  city: z.string().describe('Delivery city name or code GÇö e.g., "Colombo", "Kandy", "JAF"'),
+  city: z.string().describe('Delivery city name or code (e.g. "Colombo", "Kandy", "JAF")'),
   postal_code: z.string().optional().describe('5-digit Sri Lankan postal code (optional but recommended)'),
   delivery_instructions: z.string().optional().describe('Special delivery instructions (optional)'),
 };
@@ -243,7 +243,7 @@ class RateLimiter {
 }
 
 // ---------------------------------------------------------------------------
-// KaprukaLocal GÇö main class
+// KaprukaLocal -- main class
 // ---------------------------------------------------------------------------
 
 export class KaprukaLocal {
@@ -381,7 +381,7 @@ export class KaprukaLocal {
 
   private formatProduct(product: Product): string {
     if (this.compact) {
-      return `${product.id} | ${product.name} | LKR ${product.price.toLocaleString()} | ${product.in_stock ? 'G£ô In Stock' : 'G£ù Out of Stock'}`;
+      return `${product.id} | ${product.name} | LKR ${product.price.toLocaleString()} | ${product.in_stock ? 'In Stock' : 'Out of Stock'}`;
     }
     return JSON.stringify(product);
   }
@@ -769,7 +769,7 @@ Use this after searching to get complete product information before adding to ca
       {
         description: `Find similar or alternative products when a search returns 0 results, the item is out of stock, or the customer wants options.
 Uses fuzzy matching across name, description, and category to find close matches.
-Always call this BEFORE telling the user "nothing found" GÇö the AI should never hit a dead end.
+Always call this BEFORE telling the user "nothing found" -- the AI should never hit a dead end.
 Returns: list of alternative products with visual descriptions for voice-friendly output.`,
         inputSchema: GetAlternativesSchema,
       },
@@ -788,7 +788,7 @@ Returns: list of alternative products with visual descriptions for voice-friendl
           let alternatives = await this.findAlternatives(query, category, maxPrice, limit);
 
           if (alternatives.length === 0) {
-            // Fall back to broader search GÇö try each word individually
+            // Fall back to broader search -- try each word individually
             const words = this.extractTokens(query);
             for (const word of words) {
               const more = await this.findAlternatives(word, category, maxPrice, limit - alternatives.length);
@@ -832,7 +832,7 @@ Returns: list of alternative products with visual descriptions for voice-friendl
       {
         description: `Add a product to the local cart. The cart persists across all tool calls in this session.
 Returns: confirmation message, updated cart contents, and running total.
-Note: The cart is local only GÇö it is NOT sent to Kapruka until you call kapruka_create_order.`,
+Note: The cart is local only -- it is NOT sent to Kapruka until you call kapruka_create_order.`,
         inputSchema: AddToCartSchema,
       },
       async ({ productId, name, price, quantity }) => {
@@ -847,7 +847,7 @@ Note: The cart is local only GÇö it is NOT sent to Kapruka until you call kapruk
         this.storage.incrementAnalytics(productId, 'cart_add');
 
         return this.textContent(JSON.stringify({
-          message: `Added ${qty} +ù ${name} to your cart.`,
+          message: `Added ${qty} +ï¿½ ${name} to your cart.`,
           cart: this.context.cartItems,
           cartTotal: `LKR ${this.context.cartTotal.toLocaleString()}`,
           itemCount: this.context.cartItems.length,
@@ -1019,9 +1019,9 @@ Always call this before creating an order when the customer specifies a delivery
             estimatedDays: result.estimated_days,
             note: result.available
               ? result.fee === 0
-                ? '=ƒÄë Free delivery to this city!'
+                ? '=ï¿½ï¿½ï¿½ Free delivery to this city!'
                 : `Delivery fee: LKR ${result.fee}. Arrives in ${result.estimated_days} day${result.estimated_days !== 1 ? 's' : ''}.`
-              : 'GÜán+Å Perishable products cannot be delivered to this city due to the distance.',
+              : 'Gï¿½ï¿½n+ï¿½ Perishable products cannot be delivered to this city due to the distance.',
           });
 
           this.cacheSet(cacheKey, text);
@@ -1125,7 +1125,7 @@ Rate limit: 30 orders per hour.`,
             items: result.items,
             status: result.status,
             expiresAt: result.expires_at,
-            message: `G£à Order created! Complete payment at the checkout URL within 60 minutes to confirm your order.`,
+            message: `Gï¿½ï¿½ Order created! Complete payment at the checkout URL within 60 minutes to confirm your order.`,
           }));
         } catch (err) {
           const error = err instanceof Error ? err : new Error(String(err));
@@ -1146,7 +1146,7 @@ Rate limit: 30 orders per hour.`,
       TOOL_NAMES.track_order,
       {
         description: `Track the status and delivery progress of an existing order.
-Returns: current status (pending GåÆ processing GåÆ dispatched GåÆ delivered), item list, and timestamps.
+Returns: current status (pending Gï¿½ï¿½ processing Gï¿½ï¿½ dispatched Gï¿½ï¿½ delivered), item list, and timestamps.
 Use the order ID from a create_order response or from the customer's confirmation email.`,
         inputSchema: TrackOrderSchema,
       },
@@ -1170,17 +1170,10 @@ Use the order ID from a create_order response or from the customer's confirmatio
             );
           }
 
-          const STATUS_EMOJI: Record<string, string> = {
-            pending:    '=ƒòÉ',
-            processing: 'GÜÖn+Å',
-            dispatched: '=ƒÜÜ',
-            delivered:  'G£à',
-          };
-
           return this.textContent(JSON.stringify({
             orderId: result.id,
             status: result.status,
-            statusLabel: `${STATUS_EMOJI[result.status] ?? '=ƒôª'} ${result.status.charAt(0).toUpperCase() + result.status.slice(1)}`,
+            statusLabel: result.status.charAt(0).toUpperCase() + result.status.slice(1),
             items: result.items,
             total: `LKR ${result.total.toLocaleString()}`,
             currency: result.currency,
@@ -1201,7 +1194,7 @@ Use the order ID from a create_order response or from the customer's confirmatio
     this.server.registerTool(
       TOOL_NAMES.get_recommendations,
       {
-        description: `AI-powered upselling tool. Recommends products that "go well" with items currently in the cart.
+        description: `Recommends products that "go well" with items currently in the cart.
 Examples: if a cake is in cart, suggests candles or flowers. If an iPhone is in cart, suggests cases or chargers.`,
         inputSchema: GetRecommendationsSchema,
       },
@@ -1291,7 +1284,7 @@ Supports: USD, AED, EUR, GBP, INR. Ideal for expats sending gifts home.`,
     this.server.registerTool(
       TOOL_NAMES.get_analytics,
       {
-        description: 'Developer Analytics: See which products are trending based on AI mentions, views, and cart additions.',
+        description: 'View trending products based on mentions, views, and cart additions.',
         inputSchema: {},
       },
       async () => {

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 import type { Storage } from '../storage.js';
 
 export interface Product {

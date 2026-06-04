@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 export { KaprukaLocal } from './server.js';
 export { KaprukaEvents } from './events.js';
 export type { EventHandlers } from './events.js';

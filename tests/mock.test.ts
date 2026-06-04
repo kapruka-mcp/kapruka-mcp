@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 import { describe, it, expect } from 'vitest';
 import {
   mockSearchProducts,

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 PulseBrew (Rithik) — https://github.com/k-rithik04
+
 import type {
   Product,
   Category,
@@ -8,9 +10,9 @@ import type {
 } from '../sdk/types.js';
 
 /**
- * High-Fidelity Mock Service for kapruka-mcp.
+ * Mock service for kapruka-mcp.
  *
- * Provides a 160+ product catalog, realistic logistics data, perishable-aware
+ * Provides a 136-product catalog, realistic logistics data, perishable-aware
  * delivery logic, and stateful order tracking for offline development.
  *
  * All prices are in LKR (Sri Lankan Rupees).
