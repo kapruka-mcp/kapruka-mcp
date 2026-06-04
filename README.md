@@ -17,6 +17,7 @@ Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.k
 
 | Feature | Raw `mcp.kapruka.com` | `kapruka-mcp` SDK |
 |---|---|---|
+| MCP protocol compliance | Non-standard params nesting | Flat args -- works with all MCP clients |
 | TypeScript types | -- | Full types for all 15 tools |
 | Offline / mock mode | -- | 136-product catalog, no internet needed |
 | Live mode | 7 tools | All 15 tools (7 server + 8 composed) |
@@ -29,6 +30,8 @@ Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.k
 | REST API | -- | HTTP endpoints with session management |
 | React hooks | -- | `useKaprukaSearch`, `useCart`, `useCheckout` |
 | `npm install` | -- | One command |
+
+> **MCP Protocol Fix:** The official Kapruka MCP server uses non-standard parameter nesting (`{ params: { q: "cake" } }` instead of flat `{ q: "cake" }`). This breaks standard MCP clients like Claude Desktop and Cursor. `kapruka-mcp` fixes this transparently so all 7 official tools work out of the box with any MCP-compatible AI agent.
 
 ### Live mode compatibility
 
