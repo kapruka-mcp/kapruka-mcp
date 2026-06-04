@@ -9,6 +9,7 @@ export const TOOL_NAMES = {
   get_alternatives: 'kapruka_get_alternatives',
   add_to_cart: 'kapruka_add_to_cart',
   get_cart: 'kapruka_get_cart',
+  clear_cart: 'kapruka_clear_cart',
   list_categories: 'kapruka_list_categories',
   list_delivery_cities: 'kapruka_list_delivery_cities',
   check_delivery: 'kapruka_check_delivery',

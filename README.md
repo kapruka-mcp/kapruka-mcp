@@ -456,7 +456,7 @@ npm install kapruka-mcp
 
 | Code | City | Fee | Days |
 |------|------|-----|------|
-| COL | Colombo 1–15 | FREE | 1 |
+| COL | Colombo 1–15 | FREE | 0 |
 | DEH | Dehiwala / Mt Lavinia | LKR 150 | 1 |
 | NEG | Negombo | LKR 250 | 1 |
 | SRI | Sri Jayawardenepura | LKR 200 | 1 |

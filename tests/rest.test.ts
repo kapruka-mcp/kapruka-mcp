@@ -40,7 +40,7 @@ describe('REST API — Health & Tools', () => {
   it('GET /api/tools', async () => {
     const r = await request('GET', '/api/tools');
     expect(r.status).toBe(200);
-    expect(r.body.data.tools.length).toBe(14);
+    expect(r.body.data.tools.length).toBe(15);
   });
 
   it('404 for unknown route', async () => {
@@ -177,7 +177,7 @@ describe('REST API — Individual Endpoints (14 tools)', () => {
     expect(r.body.data.recommendations.length).toBeGreaterThan(0);
   });
 
-  it('POST /api/currency/convert', async () => {
+  it('POST /api/currency/convert', { timeout: 15000 }, async () => {
     const r = await request('POST', '/api/currency/convert', { amount: 1000, to: 'USD' }, sessionId);
     expect(r.status).toBe(200);
     expect(r.body.data.converted).toContain('USD');

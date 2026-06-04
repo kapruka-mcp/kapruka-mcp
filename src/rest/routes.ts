@@ -94,14 +94,15 @@ async function callTool(session: Session, toolName: string, args: Record<string,
 // ---------------------------------------------------------------------------
 
 /** POST /api/tool — universal tool endpoint */
-export async function handleUniversalTool(ctx: RouteContext): Promise<unknown> {
+export async function handleUniversalTool(ctx: RouteContext): Promise<{ result: unknown; tool: string }> {
   const { tool, args } = ctx.body as { tool?: string; args?: Record<string, unknown> };
   if (!tool) throw Object.assign(new Error('Missing "tool" field'), { status: 400 });
 
   const toolSchema = TOOL_SCHEMAS.find(s => s.name === tool);
   if (!toolSchema) throw Object.assign(new Error(`Unknown tool: ${tool}. Use GET /api/tools to list available tools.`), { status: 400 });
 
-  return callTool(ctx.session, tool, args ?? {});
+  const result = await callTool(ctx.session, tool, args ?? {});
+  return { result, tool };
 }
 
 /** POST /api/search */
@@ -127,6 +128,11 @@ async function handleCartAdd(ctx: RouteContext): Promise<unknown> {
 /** POST /api/cart */
 async function handleCartGet(ctx: RouteContext): Promise<unknown> {
   return callTool(ctx.session, 'kapruka_get_cart', {});
+}
+
+/** DELETE /api/cart */
+async function handleCartClear(ctx: RouteContext): Promise<unknown> {
+  return callTool(ctx.session, 'kapruka_clear_cart', {});
 }
 
 /** POST /api/categories */
@@ -248,5 +254,6 @@ export const GET_ROUTES: Record<string, RouteHandler> = {
 };
 
 export const DELETE_ROUTES: Record<string, RouteHandler> = {
+  '/api/cart': handleCartClear,
   '/api/session': handleSessionClear,
 };

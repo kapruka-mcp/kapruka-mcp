@@ -206,6 +206,17 @@ export class KaprukaSDK {
     return this.callTool<CartItem[]>('kapruka_get_cart', {});
   }
 
+  async clearCart(): Promise<void> {
+    // Cart is always local
+    if (this.isOfficialServer) {
+      throw new Error(
+        'clear_cart is a local-only tool and is not available on the official Kapruka MCP server. ' +
+        'Use the local MCP server (kapruka-mcp/local) or the REST API for cart operations.'
+      );
+    }
+    await this.callTool('kapruka_clear_cart', {});
+  }
+
   async listCategories(): Promise<Category[]> {
     if (this.isOfficialServer) {
       const rawText = await this.callToolRaw('kapruka_list_categories', {});

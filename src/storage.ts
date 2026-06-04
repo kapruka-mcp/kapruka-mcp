@@ -7,6 +7,14 @@ export interface ProductAnalytics {
   cart_adds: number;
 }
 
+/**
+ * Shared trending score formula used by both MemoryStorage and SqliteStorage.
+ * cart_adds are weighted 2x because they indicate purchase intent.
+ */
+export function computeTrendingScore(a: ProductAnalytics): number {
+  return a.mentions + a.views + a.cart_adds * 2;
+}
+
 export interface Storage {
   get<T>(key: string): T | null;
   set<T>(key: string, value: T, ttlMs?: number): void;
@@ -84,7 +92,7 @@ export class MemoryStorage implements Storage {
           cart_adds: data?.cart_adds ?? 0,
         };
       })
-      .sort((a, b) => (b.mentions + b.views + b.cart_adds * 2) - (a.mentions + a.views + a.cart_adds * 2))
+      .sort((a, b) => computeTrendingScore(b) - computeTrendingScore(a))
       .slice(0, limit);
   }
 }
@@ -240,6 +248,7 @@ export class SqliteStorage implements Storage {
   }
 
   getAnalytics(limit: number = 10): ProductAnalytics[] {
+    // Must stay in sync with computeTrendingScore() above
     return this.db!.prepare(`
       SELECT product_id, mentions, views, cart_adds FROM product_analytics 
       ORDER BY (mentions + views + cart_adds * 2) DESC 

@@ -79,6 +79,12 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: TOOL_NAMES.clear_cart,
+    description: 'Clear all items from the session cart.',
+    path: '/api/cart',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: TOOL_NAMES.list_categories,
     description: 'List all product categories available on Kapruka.',
     path: '/api/categories',

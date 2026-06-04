@@ -252,13 +252,25 @@ export class KaprukaClient {
 
   async clearCart(): Promise<void> {
     if (this.mode === 'sdk' && this.sdk) {
-      const cart = await this.sdk.getCart();
-      for (const item of cart) {
-        await this.sdk.addToCart(item.productId, item.name, item.price, -item.quantity);
-      }
+      await this.sdk.clearCart();
       return;
     }
-    await this.restFetch('/api/cart', {});
+    const res = await fetch(`${this.baseUrl}/api/cart`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': this._sessionId,
+      },
+    });
+    const json: RestResponse<void> = await res.json();
+    if (json.sessionId && json.sessionId !== 'none') {
+      this._sessionId = json.sessionId;
+    }
+    if (!json.success) {
+      throw Object.assign(new Error(json.error ?? 'Failed to clear cart'), {
+        suggestion: json.suggestion,
+      });
+    }
   }
 
   // -------------------------------------------------------------------------

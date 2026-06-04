@@ -274,10 +274,8 @@ describe('useCart', () => {
       expect(result.current.items).toHaveLength(1);
     });
 
-    mockFetchSuccess(undefined);
-    // clearCart makes getCart + clearCart calls
+    // clearCart calls DELETE /api/cart
     fetchMock.mockResolvedValueOnce({ json: async () => ({ success: true, data: undefined, sessionId: 'test' }) });
-    fetchMock.mockResolvedValueOnce({ json: async () => ({ success: true, data: { items: [] }, sessionId: 'test' }) });
 
     await act(async () => {
       await result.current.clearCart();

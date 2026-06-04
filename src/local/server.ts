@@ -752,6 +752,7 @@ export class KaprukaLocal {
     this.registerGetAlternatives();
     this.registerAddToCart();
     this.registerGetCart();
+    this.registerClearCart();
     this.registerListCategories();
     this.registerListDeliveryCities();
     this.registerCheckDelivery();
@@ -969,6 +970,37 @@ Note: The cart is local only -- it is NOT sent to Kapruka until you call kapruka
     );
   }
 
+  // --- kapruka_clear_cart ---
+  private registerClearCart(): void {
+    this.server.registerTool(
+      TOOL_NAMES.clear_cart,
+      {
+        description: `Clear all items from the local cart. Returns an empty cart and zero total.
+Use this before adding a completely new set of items, or when the customer wants to start over.`,
+        inputSchema: {},
+      },
+      async () => {
+        this.events.toolCall(TOOL_NAMES.clear_cart, {});
+        this.recordAction(TOOL_NAMES.clear_cart, {});
+
+        // Remove all cart keys from storage
+        const cartKeysList = this.storage.keys('cart:');
+        for (const key of cartKeysList) {
+          this.storage.delete(key);
+        }
+        this.cartKeys.clear();
+        this.refreshCartContext();
+
+        return this.textContent(JSON.stringify({
+          message: 'Cart cleared.',
+          items: this.context.cartItems,
+          cartTotal: 'LKR 0',
+          itemCount: 0,
+        }));
+      }
+    );
+  }
+
   // --- kapruka_get_cart ---
   private registerGetCart(): void {
     this.server.registerTool(
@@ -1180,11 +1212,6 @@ Always call this first to prevent order failures from invalid addresses.`,
         }
 
         const result = await this.validateShippingAddress(shippingAddress, liveCities);
-
-        // Store validated address in session context for order creation
-        if (result.valid) {
-          // reserved for future use
-        }
 
         return this.textContent(JSON.stringify({
           valid: result.valid,

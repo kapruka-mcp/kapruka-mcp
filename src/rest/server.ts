@@ -222,8 +222,18 @@ async function handleRequest(
 
     // Set session ID in response header
     res.setHeader('X-Session-ID', sid);
-    const toolName = PATH_TO_TOOL[path] ?? (path === '/api/tool' ? (body as { tool?: string })?.tool : undefined);
-    sendSuccess(res, result, sid, toolName);
+    // For the universal /api/tool endpoint, the handler returns { result, tool }.
+    // For individual endpoints, extract the tool name from the path map.
+    let toolName: string | undefined;
+    let responseData = result;
+    if (path === '/api/tool' && result && typeof result === 'object' && 'tool' in result) {
+      const universalResult = result as { result: unknown; tool: string };
+      toolName = universalResult.tool;
+      responseData = universalResult.result;
+    } else {
+      toolName = PATH_TO_TOOL[path];
+    }
+    sendSuccess(res, responseData, sid, toolName);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
     const status = (err as { status?: number }).status ?? 500;
