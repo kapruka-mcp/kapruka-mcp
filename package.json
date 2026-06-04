@@ -11,16 +11,19 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     },
     "./local": {
+      "types": "./dist/local/index.d.ts",
       "import": "./dist/local/index.js",
-      "types": "./dist/local/index.d.ts"
+      "default": "./dist/local/index.js"
     },
     "./storage": {
+      "types": "./dist/storage.d.ts",
       "import": "./dist/storage.js",
-      "types": "./dist/storage.d.ts"
+      "default": "./dist/storage.js"
     }
   },
   "files": [
