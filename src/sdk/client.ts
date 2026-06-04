@@ -56,9 +56,15 @@ export class KaprukaSDK {
       throw new Error(`The Kapruka server is currently unreachable. Please check your internet connection or the server status URL: ${this.mcpUrl}`, { cause: _connError });
     }
 
+    // The official Kapruka MCP server requires arguments wrapped in a "params" key.
+    // Local/custom servers follow standard MCP protocol (flat arguments).
+    // When transport is null, we're using an injected client (tests/local), so don't wrap.
+    const isOfficial = this.transport !== null && this.mcpUrl.includes('mcp.kapruka.com');
+    const callArgs = isOfficial ? { params: args } : args;
+
     let result;
     try {
-      result = await this.client.callTool({ name, arguments: args });
+      result = await this.client.callTool({ name, arguments: callArgs });
     } catch (toolError) {
       throw new Error(`Failed to communicate with Kapruka MCP: ${toolError instanceof Error ? toolError.message : 'Unknown connection error'}`, { cause: toolError });
     }
@@ -74,11 +80,15 @@ export class KaprukaSDK {
       throw new Error(`Kapruka tool "${name}" returned an empty response. This may indicate a temporary server issue.`);
     }
 
+    const rawText = content[0].text;
+
+    // Try JSON first (local mock server returns JSON)
     let parsed: Record<string, unknown>;
     try {
-      parsed = JSON.parse(content[0].text) as Record<string, unknown>;
+      parsed = JSON.parse(rawText) as Record<string, unknown>;
     } catch {
-      throw new Error(`Kapruka tool "${name}" returned invalid JSON: ${content[0].text.slice(0, 200)}`);
+      // Official server returns markdown — return as structured text response
+      return { text: rawText, markdown: true } as unknown as T;
     }
 
     // Detect application-level error objects from the server
