@@ -162,8 +162,7 @@ const GetRecommendationsSchema = {
 const ValidateShippingSchema = {
   name: z.string().min(2).describe('Full name (e.g., "Kamal Perera")'),
   phone: z.string().describe('Sri Lankan phone number in any common format: 0771234567, +94771234567, 077-123-4567'),
-  address_line1: z.string().min(5).describe('Street address or house number and street (e.g., "42 Temple Road")'),
-  address_line2: z.string().optional().describe('Apartment, suite, floor, or additional address info (optional)'),
+  address: z.string().min(5).describe('Street address or house number and street (e.g., "42 Temple Road")'),
   city: z.string().describe('Delivery city name or code (e.g. "Colombo", "Kandy", "JAF")'),
   postal_code: z.string().optional().describe('5-digit Sri Lankan postal code (optional but recommended)'),
   delivery_instructions: z.string().optional().describe('Special delivery instructions (optional)'),
@@ -1044,16 +1043,16 @@ Returns: {valid: true/false, errors: [...], warnings: [...]}.
 Always call this first to prevent order failures from invalid addresses.`,
         inputSchema: ValidateShippingSchema,
       },
-      async ({ name, phone, address_line1, address_line2, city, postal_code, delivery_instructions }) => {
+      async ({ name, phone, address, city, postal_code, delivery_instructions }) => {
         this.events.toolCall(TOOL_NAMES.validate_shipping, { name, phone, city });
         this.recordAction(TOOL_NAMES.validate_shipping, { name, phone, city });
 
-        const address: ShippingAddress = {
-          name, phone, address_line1, city,
-          address_line2, postal_code, delivery_instructions,
+        const shippingAddress: ShippingAddress = {
+          name, phone, address_line1: address, city,
+          postal_code, delivery_instructions,
         };
 
-        const result = this.validateShippingAddress(address);
+        const result = this.validateShippingAddress(shippingAddress);
 
         // Store validated address in session context for order creation
         if (result.valid) {
@@ -1068,8 +1067,7 @@ Always call this first to prevent order failures from invalid addresses.`,
           checkedAddress: {
             name,
             phone,
-            address_line1,
-            address_line2: address_line2 || null,
+            address,
             city,
             postal_code: postal_code || null,
             delivery_instructions: delivery_instructions || null,

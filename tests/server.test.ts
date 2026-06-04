@@ -583,7 +583,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
           postal_code: '00100',
         }
@@ -599,7 +599,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '1234567890',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
         }
       );
@@ -613,7 +613,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '077123',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
         }
       );
@@ -626,7 +626,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '+94771234567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
         }
       );
@@ -638,7 +638,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '077-123-4567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
         }
       );
@@ -650,7 +650,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Atlantis',
         }
       );
@@ -663,7 +663,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
         }
       );
@@ -676,7 +676,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '42 Temple Road',
+          address: '42 Temple Road',
           city: 'Colombo',
           postal_code: '123',
         }
@@ -689,7 +689,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '10 Kandy Road',
+          address: '10 Kandy Road',
           city: 'Kandy',
         }
       );
@@ -701,7 +701,7 @@ describe('KaprukaLocal', () => {
         'kapruka_validate_shipping', {
           name: 'Kamal Perera',
           phone: '0771234567',
-          address_line1: '5 Main Street',
+          address: '5 Main Street',
           city: 'Jaffna',
         }
       );
