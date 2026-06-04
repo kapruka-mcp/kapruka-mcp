@@ -8,7 +8,7 @@ Built an open-source npm package for the Kapruka Agent Challenge.
 
 `kapruka-mcp` is a TypeScript SDK that wraps Kapruka's official MCP server and adds what the raw API doesn't:
 
-- Offline mock mode — 136 products, 12 categories, zero internet. Build and test without touching production.
+- Offline mock mode — 136 products, 12 categories, 16 delivery cities, zero internet. Build and test without touching production.
 - Local cart persistence — cart survives restarts via SQLite (optional).
 - Pre-checkout validation — catches invalid phone numbers, unknown cities before order creation.
 - Fuzzy alternatives — when a search returns 0 results, the AI finds similar products automatically. No dead ends.
