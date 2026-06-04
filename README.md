@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A fast, lightweight, and stateful TypeScript SDK for building conversational commerce applications on top of **Kapruka.com** — Sri Lanka's largest e-commerce platform.
+A fast, lightweight, and stateful TypeScript SDK for building conversational commerce applications on top of **Kapruka.com** -- Sri Lanka's largest e-commerce platform.
 
 Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.kapruka.com/contactUs/agentChallenge.html)** and anyone building AI shopping agents for the Sri Lankan market.
 
@@ -15,30 +15,33 @@ Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.k
 
 | Feature | Raw `mcp.kapruka.com` | `kapruka-mcp` SDK |
 |---|---|---|
-| TypeScript types | ❌ | ✅ Full types for all 14 tools |
-| Offline / mock mode | ❌ | ✅ 136-product catalog, no internet needed |
-| Live mode | ✅ 7 tools | ✅ All 14 tools (7 server + 7 composed) |
+| TypeScript types | -- | Full types for all 15 tools |
+| Offline / mock mode | -- | 136-product catalog, no internet needed |
+| Live mode | 7 tools | All 15 tools (7 server + 8 composed) |
 | Response format | Markdown text | Structured JSON |
-| Cart persistence | ❌ Stateless | ✅ Memory or SQLite |
-| Response caching | ❌ | ✅ 30-minute TTL cache |
-| Rate limit tracking | ❌ | ✅ 60 req/min, 30 orders/hr |
-| Event hooks | ❌ | ✅ `onToolCall`, `onError` |
-| Perishable delivery logic | ❌ | ✅ Cakes/flowers blocked to remote cities |
-| `npm install` | ❌ | ✅ One command |
+| Cart persistence | Stateless | Memory or SQLite |
+| Response caching | -- | 30-minute TTL cache |
+| Rate limit tracking | -- | 60 req/min, 30 orders/hr |
+| Event hooks | -- | `onToolCall`, `onError` |
+| Perishable delivery logic | -- | Cakes/flowers blocked to remote cities |
+| REST API | -- | HTTP endpoints with session management |
+| React hooks | -- | `useKaprukaSearch`, `useCart`, `useCheckout` |
+| `npm install` | -- | One command |
 
 ### Live mode compatibility
 
-The SDK works against the official Kapruka MCP server (`mcp.kapruka.com`). The server returns markdown — the SDK parses it into structured JSON automatically. All 7 official tools work, plus 7 extra tools built on top:
+The SDK works against the official Kapruka MCP server (`mcp.kapruka.com`). The server returns markdown -- the SDK parses it into structured JSON automatically. All 7 official tools work, plus 8 extra tools built on top:
 
-| Official tools (7) | Extra tools (7) — composed from official |
+| Official tools (7) | Extra tools (8) -- composed from official |
 |---|---|
 | `search_products` | `get_alternatives` (uses search + scoring) |
 | `get_product` | `validate_shipping` (uses list_delivery_cities) |
 | `list_categories` | `get_recommendations` (uses search by category) |
-| `list_delivery_cities` | `convert_currency` (pure math) |
+| `list_delivery_cities` | `convert_currency` (Frankfurter API) |
 | `check_delivery` | `add_to_cart` (local storage) |
 | `create_order` | `get_cart` (local storage) |
 | `track_order` | `get_analytics` (local storage) |
+| | `clear_cart` (local storage) |
 
 ---
 
@@ -53,11 +56,16 @@ For persistent SQLite cart storage (optional):
 npm install kapruka-mcp better-sqlite3
 ```
 
+For React hooks (frontend projects):
+```bash
+npm install kapruka-mcp react
+```
+
 > **Requires:** Node.js 18+, TypeScript 5.x
 
 ---
 
-## Quick Start — 30 seconds
+## Quick Start -- 30 seconds
 
 ### Option A: Direct SDK (call Kapruka's live MCP server)
 
@@ -66,11 +74,11 @@ import { KaprukaSDK } from 'kapruka-mcp';
 
 const sdk = new KaprukaSDK();
 
-// Search products (q = search keyword, matches official Kapruka MCP spec)
+// Search products
 const results = await sdk.searchProducts('birthday cake', 'cakes');
-console.log(results.products[0].name); // → "Java Lounge Classic Ribbon Cake"
+console.log(results.products[0].name); // "Java Lounge Classic Ribbon Cake"
 
-// Get full product detail (product_id = SKU)
+// Get full product detail
 const product = await sdk.getProduct('KAP-CAKE-001');
 
 // Check delivery to Kandy
@@ -79,7 +87,7 @@ const delivery = await sdk.checkDelivery('KAN', 'KAP-CAKE-001');
 // Add to cart
 await sdk.addToCart('KAP-CAKE-001', product.name, product.price, 1);
 
-// Create checkout link (official Kapruka format: cart, recipient, delivery, sender)
+// Create checkout link
 const order = await sdk.createOrder({
   cart: [{ product_id: 'KAP-CAKE-001', quantity: 1 }],
   recipient: {
@@ -91,7 +99,7 @@ const order = await sdk.createOrder({
   delivery: { date: '2026-06-05' },
   sender: { name: 'Rithik', phone: '0779876543' },
 });
-console.log(order.checkout_url); // → "https://www.kapruka.com/checkout/pay/..."
+console.log(order.checkout_url); // "https://www.kapruka.com/checkout/pay/..."
 ```
 
 ### Option B: Local MCP Server (for Claude Desktop, Cursor, or your AI agent)
@@ -122,6 +130,45 @@ const local = new KaprukaLocal({
   mock: false, // use the live Kapruka MCP server
   storage: new SqliteStorage('./kapruka-session.db'),
 });
+```
+
+### Option D: REST API server
+
+```bash
+# Mock mode (offline)
+npx kapruka-mcp --mock --rest --port 3001
+
+# Live mode (real Kapruka catalog)
+npx kapruka-mcp --rest --port 3001
+```
+
+```typescript
+import { createRestServer } from 'kapruka-mcp/rest';
+
+const server = createRestServer({ port: 3001, mock: true });
+await server.start();
+console.log(`REST API running at ${server.url()}`);
+```
+
+### Option E: React hooks
+
+```tsx
+import { KaprukaProvider, useKaprukaSearch, useCart, useCheckout } from 'kapruka-mcp/react';
+
+function App() {
+  return (
+    <KaprukaProvider mode="rest" baseUrl="http://localhost:3001">
+      <ShoppingPage />
+    </KaprukaProvider>
+  );
+}
+
+function ShoppingPage() {
+  const { results, search } = useKaprukaSearch();
+  const { items, total, addItem } = useCart();
+  const { order, createOrder } = useCheckout(items);
+  // ...
+}
 ```
 
 ---
@@ -160,38 +207,67 @@ Add this to your `claude_desktop_config.json`:
 
 ---
 
+## REST API Endpoints
+
+Every endpoint returns `{ success: true, data: ..., sessionId: "..." }`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/search` | Search products |
+| POST | `/api/product` | Get product details |
+| POST | `/api/alternatives` | Find similar products |
+| GET | `/api/categories` | List categories |
+| GET | `/api/cities` | List delivery cities |
+| POST | `/api/delivery/check` | Check delivery availability |
+| POST | `/api/shipping/validate` | Validate shipping address |
+| POST | `/api/cart/add` | Add item to cart |
+| GET | `/api/cart` | View cart |
+| DELETE | `/api/cart` | Clear cart |
+| POST | `/api/order/create` | Create checkout order |
+| POST | `/api/order/track` | Track order status |
+| POST | `/api/currency/convert` | Convert currency |
+| POST | `/api/recommendations` | Get recommendations |
+| POST | `/api/analytics` | View analytics |
+| POST | `/api/tool` | Universal tool endpoint |
+| GET | `/api/tools` | List all tools |
+| GET | `/api/health` | Health check |
+
+---
+
 ## Available Tools
 
-All 14 tools match or extend Kapruka's official capabilities. The local server adds caching, rate limiting, and stateful persistence.
+All 15 tools match or extend Kapruka's official capabilities. The local server adds caching, rate limiting, and stateful persistence.
 
 | Tool | Category | Description | Memory |
 |------|----------|-------------|--------|
-| `kapruka_search_products` | Search | Multi-category search with rank-optimized results | ✅ |
-| `kapruka_get_product` | Detail | Detailed product info with visual descriptions | ✅ |
-| `kapruka_get_alternatives` | AI Logic | Find similar products to avoid "nothing found" dead ends | — |
-| `kapruka_get_recommendations`| Upsell | **AI Powered** - Suggests "Go well with" items based on cart | ✅ |
-| `kapruka_add_to_cart` | Cart | **Stateful** - Persists item to local SQLite cart | ✅ |
-| `kapruka_get_cart` | Cart | **Stateful** - Retrieves currently saved items | ✅ |
-| `kapruka_list_categories` | Reference| Browse 12+ premium categories | — |
-| `kapruka_list_delivery_cities`| Reference| Get fees for 16+ Sri Lankan cities | — |
-| `kapruka_check_delivery` | Logistics | Perishable-aware delivery calculations | — |
-| `kapruka_validate_shipping` | Validation | Validate Sri Lankan phone, city, and address before checkout | — |
-| `kapruka_convert_currency` | Localization| **Expats** - Convert LKR to USD, AED, EUR, GBP, INR | — |
-| `kapruka_create_order` | Checkout | Generates 60-minute price-locked pay links | — |
-| `kapruka_track_order` | Status | **Stateful** - Monitors order status progression | ✅ |
-| `kapruka_get_analytics` | Dev Only | See which products are trending in your AI session | ✅ |
+| `kapruka_search_products` | Search | Multi-category search with rank-optimized results | Yes |
+| `kapruka_get_product` | Detail | Detailed product info with visual descriptions | Yes |
+| `kapruka_get_alternatives` | AI Logic | Find similar products to avoid "nothing found" dead ends | -- |
+| `kapruka_get_recommendations` | Upsell | Suggests "Go well with" items based on cart | Yes |
+| `kapruka_add_to_cart` | Cart | Persists item to local SQLite cart | Yes |
+| `kapruka_get_cart` | Cart | Retrieves currently saved items | Yes |
+| `kapruka_clear_cart` | Cart | Clears all items from session cart | -- |
+| `kapruka_list_categories` | Reference | Browse 12+ premium categories | -- |
+| `kapruka_list_delivery_cities` | Reference | Get fees for 16+ Sri Lankan cities | -- |
+| `kapruka_check_delivery` | Logistics | Perishable-aware delivery calculations | -- |
+| `kapruka_validate_shipping` | Validation | Validate Sri Lankan phone, city, and address before checkout | -- |
+| `kapruka_convert_currency` | Localization | Convert LKR to USD, AED, EUR, GBP, INR | -- |
+| `kapruka_create_order` | Checkout | Generates 60-minute price-locked pay links | -- |
+| `kapruka_track_order` | Status | Monitors order status progression | Yes |
+| `kapruka_get_analytics` | Dev Only | See which products are trending in your AI session | Yes |
 
-### 🛡️ Robust Error Handling & Reliability
+### Robust Error Handling & Reliability
 
-Your package includes commercial-grade reliability features:
 - **Connectivity Guard**: Automatically detects if the Kapruka server is down or unreachable and provides a descriptive error message instead of generic failures.
-- **Spec-Compliant**: Perfectly aligned with the official Kapruka `mcp.com` specification for 100% compatibility in Live Mode.
+- **Spec-Compliant**: Perfectly aligned with the official Kapruka MCP specification for 100% compatibility in Live Mode.
 - **Data Validation**: Built-in detection for application-level errors and invalid JSON, with suggested fixes for the AI.
-- **Progressive Caching**: In live mode, `getAlternatives` fires 2–4 parallel search queries, deduplicates results, and caches them in storage with a 30-minute TTL — no cold-start penalty on repeated lookups.
+- **Progressive Caching**: In live mode, `getAlternatives` fires 2-4 parallel search queries, deduplicates results, and caches them in storage with a 30-minute TTL.
+- **REST Body Limits**: 1MB default body size limit prevents memory exhaustion.
+- **Session Management**: LRU eviction, 30-minute timeout, automatic cleanup.
 
 ### Developer Analytics & Memory
 
-Your package is the first to include **Persistent Analytics**. Every tool call, view, and cart action is recorded in SQLite. 
+Every tool call, view, and cart action is recorded in storage.
 - Use `kapruka_get_analytics` to see what your users are looking at.
 - AI uses this history to provide a personalized shopping experience.
 
@@ -207,7 +283,7 @@ The local server enforces Kapruka's real delivery constraints:
 
 ## Mock Catalog
 
-The package ships with `136` realistic products across all 12 categories for offline development — no internet required.
+The package ships with `136` realistic products across all 12 categories for offline development -- no internet required.
 
 | Category | Products | Highlights |
 |----------|----------|-----------|
@@ -322,7 +398,6 @@ const functionDeclarations = [
   },
 ];
 
-// In your function handler:
 async function handleFunctionCall(name: string, args: Record<string, string>) {
   if (name === 'kapruka_search_products') {
     return sdk.searchProducts(args.q, args.category);
@@ -354,7 +429,7 @@ const local = new KaprukaLocal({
 
 ## Storage Options
 
-### In-Memory (default — no dependencies)
+### In-Memory (default -- no dependencies)
 
 ```typescript
 import { KaprukaLocal, MemoryStorage } from 'kapruka-mcp/local';
@@ -362,7 +437,7 @@ import { KaprukaLocal, MemoryStorage } from 'kapruka-mcp/local';
 const local = new KaprukaLocal({ storage: new MemoryStorage() });
 ```
 
-### SQLite (optional — cart persists across restarts)
+### SQLite (optional -- cart persists across restarts)
 
 ```bash
 npm install better-sqlite3
@@ -377,11 +452,22 @@ const local = new KaprukaLocal({
 });
 ```
 
+### Auto-detect storage
+
+```typescript
+import { createStorage, createStorageAsync } from 'kapruka-mcp/storage';
+
+// Sync (CJS)
+const storage = createStorage({ type: 'memory' });
+const storage = createStorage({ type: 'sqlite', path: './data.db' });
+
+// Async (ESM)
+const storage = await createStorageAsync({ type: 'sqlite', path: './data.db' });
+```
+
 ---
 
 ## CLI Usage
-
-Run a local MCP server over stdio (compatible with Claude Desktop, Cursor, any MCP client):
 
 ```bash
 # Mock mode (offline, no API key needed)
@@ -389,17 +475,22 @@ npx kapruka-mcp --mock
 
 # Live mode (calls mcp.kapruka.com)
 npx kapruka-mcp
+
+# REST API server
+npx kapruka-mcp --mock --rest --port 3001
 ```
 
 ---
 
 ## Package Exports
 
-```
-kapruka-mcp          → KaprukaSDK class + all TypeScript types
-kapruka-mcp/local    → KaprukaLocal server + EventEmitter + mock helpers
-kapruka-mcp/storage  → MemoryStorage + SqliteStorage + createStorage
-```
+| Import path | What you get |
+|---|---|
+| `kapruka-mcp` | `KaprukaSDK`, `MemoryStorage`, `SqliteStorage`, all TypeScript types |
+| `kapruka-mcp/local` | `KaprukaLocal` MCP server, `KaprukaEvents`, mock helpers |
+| `kapruka-mcp/storage` | `MemoryStorage`, `SqliteStorage`, `createStorage`, `createStorageAsync` |
+| `kapruka-mcp/rest` | `createRestServer`, REST API server |
+| `kapruka-mcp/react` | `KaprukaProvider`, `useKaprukaSearch`, `useCart`, `useCheckout`, `KaprukaClient` |
 
 ---
 
@@ -407,20 +498,37 @@ kapruka-mcp/storage  → MemoryStorage + SqliteStorage + createStorage
 
 ```
 kapruka-mcp/
-├── src/
-│   ├── sdk/
-│   │   ├── client.ts     ← KaprukaSDK (wraps the live MCP server)
-│   │   ├── types.ts      ← All TypeScript interfaces
-│   │   └── index.ts
-│   ├── local/
-│   │   ├── server.ts     ← KaprukaLocal (14 tools + cache + rate limiter)
-│   │   ├── mock.ts       ← 136-product catalog + logistics simulation
-│   │   ├── events.ts     ← KaprukaEvents
-│   │   └── index.ts
-│   ├── storage.ts        ← MemoryStorage + SqliteStorage
-│   ├── config.ts         ← Constants + tool name exports
-│   ├── cli.ts            ← npx entry point
-│   └── index.ts          ← Root exports
+  src/
+    config.ts              # TOOL_NAMES, KAPRUKA_MCP_URL, FRANKFURTER_RATE_URL
+    storage.ts             # Storage interface, MemoryStorage, SqliteStorage
+    index.ts               # Root exports (SDK + storage)
+    cli.ts                 # CLI entry point
+
+    sdk/
+      client.ts            # KaprukaSDK -- MCP client with markdown parser
+      markdown-parser.ts   # Parses official server markdown to JSON
+      types.ts             # All TypeScript interfaces
+      index.ts             # SDK exports
+
+    local/
+      server.ts            # KaprukaLocal -- 15 MCP tools
+      mock.ts              # 136 products, 12 categories, 16 cities
+      events.ts            # KaprukaEvents (cart/order events)
+      index.ts             # Local exports
+
+    rest/
+      server.ts            # HTTP server, session management, CORS
+      routes.ts            # Route table, callTool, response helpers
+      schemas.ts           # JSON Schema for all 15 tools
+      index.ts             # REST exports
+
+    react/
+      client.ts            # KaprukaClient (REST + SDK transport)
+      context.tsx          # KaprukaProvider, useKaprukaContext
+      useKaprukaSearch.ts  # Debounced search hook
+      useCart.ts           # Cart hook with snapshot+rollback
+      useCheckout.ts       # Checkout hook
+      index.ts             # React exports
 ```
 
 ---
@@ -456,7 +564,7 @@ npm install kapruka-mcp
 
 | Code | City | Fee | Days |
 |------|------|-----|------|
-| COL | Colombo 1–15 | FREE | 0 |
+| COL | Colombo 1-15 | FREE | 0 |
 | DEH | Dehiwala / Mt Lavinia | LKR 150 | 1 |
 | NEG | Negombo | LKR 250 | 1 |
 | SRI | Sri Jayawardenepura | LKR 200 | 1 |
@@ -473,7 +581,7 @@ npm install kapruka-mcp
 | VAN | Vavuniya | LKR 600 | 3 |
 | JAF | Jaffna | LKR 650 | 3 |
 
-> ⚠️ Perishables (cakes, flowers, fruits) **cannot** be delivered to POL, TRI, BAT, VAN, or JAF.
+> Perishables (cakes, flowers, fruits) **cannot** be delivered to POL, TRI, BAT, VAN, or JAF.
 
 ---
 
@@ -482,7 +590,7 @@ npm install kapruka-mcp
 Pull requests welcome. Please open an issue first for significant changes.
 
 ```bash
-git clone https://github.com/your-username/kapruka-mcp
+git clone https://github.com/k-rithik04/kapruka-mcp
 cd kapruka-mcp
 npm install
 npm run build
@@ -493,7 +601,7 @@ npm test
 
 ## License
 
-MIT © 2026
+MIT (c) 2026
 
 ---
 

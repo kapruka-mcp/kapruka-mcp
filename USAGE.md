@@ -1,6 +1,6 @@
 # Usage Guide
 
-Everything you need to get `kapruka-mcp` running in your project — from zero to a working AI shopping assistant in under 2 minutes.
+Everything you need to get `kapruka-mcp` running in your project -- from zero to a working AI shopping assistant in under 2 minutes.
 
 ---
 
@@ -12,26 +12,30 @@ Everything you need to get `kapruka-mcp` running in your project — from zero t
 4. [Option A: Use the Direct SDK](#option-a-use-the-direct-sdk)
 5. [Option B: Use the Local MCP Server](#option-b-use-the-local-mcp-server)
 6. [Option C: Use the CLI with Claude Desktop](#option-c-use-the-cli-with-claude-desktop)
-7. [Configuration Reference](#configuration-reference)
-8. [Real-World Workflows](#real-world-workflows)
-9. [Storage & Persistence](#storage--persistence)
-10. [Event Hooks & Observability](#event-hooks--observability)
-11. [All 14 Tools at a Glance](#all-14-tools-at-a-glance)
-12. [Troubleshooting](#troubleshooting)
+7. [Option D: Use the REST API Server](#option-d-use-the-rest-api-server)
+8. [Option E: Use the React Hooks](#option-e-use-the-react-hooks)
+9. [Configuration Reference](#configuration-reference)
+10. [Real-World Workflows](#real-world-workflows)
+11. [Storage & Persistence](#storage--persistence)
+12. [Event Hooks & Observability](#event-hooks--observability)
+13. [All 15 Tools at a Glance](#all-15-tools-at-a-glance)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## What This Package Does
 
-`kapruka-mcp` wraps Kapruka.com's official MCP server with **offline mock mode**, **local cart persistence**, **caching**, and **AI-friendly product descriptions** — so you can build a shopping agent without touching raw HTTP calls or worrying about rate limits.
+`kapruka-mcp` wraps Kapruka.com's official MCP server with **offline mock mode**, **local cart persistence**, **caching**, and **AI-friendly product descriptions** -- so you can build a shopping agent without touching raw HTTP calls or worrying about rate limits.
 
 | Without `kapruka-mcp` | With `kapruka-mcp` |
 |---|---|
-| No types, raw JSON only | Full TypeScript types for all 14 tools |
+| No types, raw JSON only | Full TypeScript types for all 15 tools |
 | Must be online | Offline mock mode with 136 products |
-| Stateless — cart lost on refresh | Cart persists in memory or SQLite |
+| Stateless -- cart lost on refresh | Cart persists in memory or SQLite |
 | No caching, hits rate limits | 30-min TTL cache, rate-limit tracking |
 | No delivery rules | Perishable-aware delivery logic built in |
+| Markdown responses | Structured JSON via built-in markdown parser |
+| HTTP only | MCP stdio, REST API, React hooks, or direct SDK |
 
 ---
 
@@ -52,7 +56,7 @@ const transport = new StdioServerTransport();
 await local.getServer().connect(transport);
 ```
 
-That's it. You now have a working MCP server with 14 tools over stdio, ready for Claude Desktop, Cursor, or any MCP client.
+That's it. You now have a working MCP server with 15 tools over stdio, ready for Claude Desktop, Cursor, or any MCP client.
 
 ---
 
@@ -64,18 +68,25 @@ That's it. You now have a working MCP server with 14 tools over stdio, ready for
 npm install kapruka-mcp
 ```
 
-### With SQLite persistence (optional — cart survives restarts)
+### With SQLite persistence (optional -- cart survives restarts)
 
 ```bash
 npm install kapruka-mcp better-sqlite3
 ```
 
-`better-sqlite3` is an **optional peer dependency**. Without it, the package works fine using in-memory storage.
+### With React hooks (frontend projects)
+
+```bash
+npm install kapruka-mcp react
+```
+
+`better-sqlite3` and `react` are **optional peer dependencies**. Without them, the core SDK works fine using in-memory storage.
 
 ### System requirements
 
 - **Node.js** 18 or later
 - **TypeScript** 5.x (if using TypeScript)
+- **React** 18+ (only if using `kapruka-mcp/react`)
 
 ---
 
@@ -95,9 +106,9 @@ const sdk = new KaprukaSDK();
 
 ```typescript
 const results = await sdk.searchProducts('birthday cake');
-// results.products → [{ id, name, price, image_url, visual_description, ... }]
-// results.total    → 12
-// results.query    → "birthday cake"
+// results.products -> [{ id, name, price, image_url, visual_description, ... }]
+// results.total    -> 12
+// results.query    -> "birthday cake"
 ```
 
 ### Get full product details
@@ -114,9 +125,9 @@ console.log(product.in_stock);          // true
 
 ```typescript
 const delivery = await sdk.checkDelivery('KAN', 'KAP-CAKE-001');
-// delivery.available     → true
-// delivery.fee           → 350
-// delivery.estimated_days → 2
+// delivery.available     -> true
+// delivery.fee           -> 350
+// delivery.estimated_days -> 2
 ```
 
 ### Add items to cart
@@ -129,7 +140,7 @@ await sdk.addToCart('KAP-CAKE-001', 'Java Lounge Classic Ribbon Cake', 3500, 1);
 
 ```typescript
 const cart = await sdk.getCart();
-// cart → [{ productId, name, price, quantity }]
+// cart -> [{ productId, name, price, quantity }]
 ```
 
 ### Create a checkout link
@@ -209,6 +220,7 @@ const local = new KaprukaLocal({
   mock: false,                                          // false = live mode (calls mcp.kapruka.com)
   compact: false,                                       // true = shorter tool descriptions for token savings
   storage: new SqliteStorage('./session.db', 'kapruka'), // persistent storage with custom prefix
+  currencyApiUrl: 'https://api.frankfurter.dev/v2/rate/USD/LKR', // configurable currency endpoint
   events: {
     onToolCall: (tool, args) => {
       console.log(`[Tool] ${tool}`, JSON.stringify(args));
@@ -230,8 +242,9 @@ await local.getServer().connect(transport);
 | `mock` | `boolean` | `true` | `true` = offline mode with 136 mock products. `false` = live mode calling `mcp.kapruka.com`. |
 | `compact` | `boolean` | `false` | `true` = shorter tool descriptions to save tokens in AI prompts. |
 | `storage` | `Storage` | `MemoryStorage()` | Where to persist cart data. Use `SqliteStorage` for persistence across restarts. |
-| `events.onToolCall` | `(tool, args) => void` | — | Called every time a tool is invoked. Good for logging. |
-| `events.onError` | `(tool, error) => void` | — | Called when a tool throws. Good for error tracking. |
+| `currencyApiUrl` | `string` | Frankfurter API | Custom endpoint for live currency rates. |
+| `events.onToolCall` | `(tool, args) => void` | -- | Called every time a tool is invoked. Good for logging. |
+| `events.onError` | `(tool, error) => void` | -- | Called when a tool throws. Good for error tracking. |
 
 ### Mock mode vs. live mode
 
@@ -243,12 +256,14 @@ await local.getServer().connect(transport);
 | Delivery rules | Simulated | Real Kapruka logistics |
 | API key | Not needed | Not needed (public server) |
 | Checkout links | Mock URLs | Real 60-min price-locked links |
+| Categories | 12 | 64 |
+| Delivery cities | 16 | 332 |
 
 ---
 
 ## Option C: Use the CLI with Claude Desktop
 
-The fastest way to connect Kapruka to Claude Desktop. No code required — just add to your config.
+The fastest way to connect Kapruka to Claude Desktop. No code required -- just add to your config.
 
 ### Step 1: Add to Claude Desktop config
 
@@ -287,12 +302,263 @@ Open your Claude Desktop config file:
 
 ### Step 3: Restart Claude Desktop
 
-Claude will now have access to all 14 Kapruka tools. Ask it things like:
+Claude will now have access to all 15 Kapruka tools. Ask it things like:
 
 - "Search for birthday cakes under LKR 5000"
 - "Can you send flowers to Jaffna?"
 - "Add a MacBook to my cart and check delivery to Kandy"
 - "Create an order with the items in my cart"
+
+---
+
+## Option D: Use the REST API Server
+
+Run a local HTTP server that exposes all 15 tools as REST endpoints. Useful for frontends, mobile apps, or any HTTP client.
+
+### Start the server
+
+```bash
+# Mock mode (offline)
+npx kapruka-mcp --mock --rest --port 3001
+
+# Live mode (real Kapruka catalog)
+npx kapruka-mcp --rest --port 3001
+```
+
+### Start from code
+
+```typescript
+import { createRestServer } from 'kapruka-mcp/rest';
+
+const server = createRestServer({
+  port: 3001,
+  host: '127.0.0.1',
+  mock: true,
+  cors: true,
+  maxSessions: 1000,
+  sessionTimeoutMs: 30 * 60 * 1000,
+});
+
+await server.start();
+console.log(`REST API running at ${server.url()}`);
+```
+
+### API Endpoints
+
+Every endpoint returns `{ success: true, data: ..., sessionId: "..." }` or `{ success: false, error: "..." }`.
+
+**Product Discovery:**
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/search` | `{ q: "birthday cake", category?: "cakes" }` |
+| POST | `/api/product` | `{ product_id: "KAP-CAKE-001" }` |
+| POST | `/api/alternatives` | `{ query: "wireless headphones", maxPrice?: 10000 }` |
+| GET | `/api/categories` | -- |
+| GET | `/api/cities` | -- |
+
+**Delivery & Shipping:**
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/delivery/check` | `{ city: "COL", product_id: "KAP-CAKE-001" }` |
+| POST | `/api/shipping/validate` | `{ name, phone, address, city }` |
+
+**Cart & Checkout:**
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/cart/add` | `{ productId, name, price, quantity? }` |
+| GET | `/api/cart` | -- |
+| DELETE | `/api/cart` | -- |
+| POST | `/api/order/create` | `{ cart, recipient, delivery, sender, gift_message? }` |
+| POST | `/api/order/track` | `{ order_number: "KAP-ORD-2501" }` |
+
+**Utilities:**
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/currency/convert` | `{ amount: 5210, to: "USD" }` |
+| POST | `/api/recommendations` | `{ limit?: 3 }` |
+| POST | `/api/analytics` | -- |
+| GET | `/api/tools` | -- (list all available tools) |
+| GET | `/api/health` | -- (server health check) |
+
+**Universal Tool Endpoint:**
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/tool` | `{ tool: "kapruka_search_products", args: { q: "roses" } }` |
+
+### Session Management
+
+- Each client gets a session via `X-Session-ID` header (auto-generated if absent)
+- Sessions expire after 30 minutes of inactivity
+- Max 1000 concurrent sessions (LRU eviction)
+- Cart data is per-session
+
+### Example: curl
+
+```bash
+# Search for products
+curl -X POST http://localhost:3001/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"q": "roses"}'
+
+# Add to cart
+curl -X POST http://localhost:3001/api/cart/add \
+  -H "Content-Type: application/json" \
+  -H "X-Session-ID: my-session" \
+  -d '{"productId": "KAP-FLW-001", "name": "Red Roses", "price": 5210, "quantity": 1}'
+
+# View cart
+curl http://localhost:3001/api/cart \
+  -H "X-Session-ID: my-session"
+```
+
+---
+
+## Option E: Use the React Hooks
+
+React hooks for building shopping UIs with `kapruka-mcp`. Supports both REST and SDK transport modes.
+
+### Setup
+
+```bash
+npm install kapruka-mcp react
+```
+
+### Wrap your app with the provider
+
+```tsx
+import { KaprukaProvider } from 'kapruka-mcp/react';
+
+function App() {
+  return (
+    <KaprukaProvider mode="rest" baseUrl="http://localhost:3001">
+      <ShoppingPage />
+    </KaprukaProvider>
+  );
+}
+```
+
+**SDK mode** (direct to Kapruka, no REST server needed):
+
+```tsx
+<KaprukaProvider mode="sdk" mcpUrl="https://mcp.kapruka.com/mcp">
+  <ShoppingPage />
+</KaprukaProvider>
+```
+
+### Search for products
+
+```tsx
+import { useKaprukaSearch } from 'kapruka-mcp/react';
+
+function SearchPage() {
+  const { results, loading, error, search, loadMore } = useKaprukaSearch();
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="Search products..."
+        onChange={(e) => search(e.target.value)}
+      />
+      {loading && <p>Loading...</p>}
+      {results.products.map(p => (
+        <div key={p.id}>
+          <h3>{p.name}</h3>
+          <p>LKR {p.price}</p>
+          <p>{p.visual_description}</p>
+        </div>
+      ))}
+      {results.hasMore && (
+        <button onClick={loadMore}>Load more</button>
+      )}
+    </div>
+  );
+}
+```
+
+### Manage the cart
+
+```tsx
+import { useCart } from 'kapruka-mcp/react';
+
+function CartPage() {
+  const { items, total, addItem, removeItem, updateQuantity, clearCart, loading } = useCart();
+
+  return (
+    <div>
+      <h2>Cart ({items.length} items)</h2>
+      {items.map(item => (
+        <div key={item.productId}>
+          <span>{item.name} x{item.quantity}</span>
+          <span>LKR {item.price * item.quantity}</span>
+          <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}>-</button>
+          <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
+          <button onClick={() => removeItem(item.productId)}>Remove</button>
+        </div>
+      ))}
+      <h3>Total: LKR {total}</h3>
+      <button onClick={clearCart}>Clear Cart</button>
+    </div>
+  );
+}
+```
+
+### Checkout
+
+```tsx
+import { useCheckout } from 'kapruka-mcp/react';
+import { useCart } from 'kapruka-mcp/react';
+
+function CheckoutPage() {
+  const { items, total } = useCart();
+  const { order, loading, error, createOrder } = useCheckout(items);
+
+  const handleCheckout = () => {
+    createOrder({
+      recipient: {
+        name: 'Amara Perera',
+        phone: '0771234567',
+        address: '42 Galle Road, Colombo 03',
+        city: 'COL',
+      },
+      delivery: { date: '2026-06-05' },
+      sender: { name: 'Rithik', phone: '0779876543' },
+      gift_message: 'Happy Birthday!',
+    });
+  };
+
+  if (order) {
+    return (
+      <div>
+        <h2>Order Created!</h2>
+        <p>Order ID: {order.id}</p>
+        <a href={order.checkout_url}>Proceed to Payment</a>
+        <p>Expires: {order.expires_at}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2>Checkout</h2>
+      <p>Total: LKR {total}</p>
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+      <button onClick={handleCheckout} disabled={loading}>
+        {loading ? 'Creating Order...' : 'Place Order'}
+      </button>
+    </div>
+  );
+}
+```
+
+### React hooks reference
+
+| Hook | Returns | Description |
+|------|---------|-------------|
+| `useKaprukaSearch()` | `{ results, loading, error, search, loadMore }` | Debounced search with offset-based pagination |
+| `useCart()` | `{ items, total, addItem, removeItem, updateQuantity, clearCart, loading }` | Cart with snapshot+rollback on failure |
+| `useCheckout(cartItems)` | `{ order, loading, error, createOrder }` | Checkout flow (takes cart items as param) |
+| `useKaprukaContext()` | `{ client, sessionId }` | Access the underlying KaprukaClient |
 
 ---
 
@@ -302,7 +568,7 @@ Claude will now have access to all 14 Kapruka tools. Ask it things like:
 
 ```typescript
 const sdk = new KaprukaSDK({
-  mcpUrl: 'https://mcp.kapruka.com/mcp', // default — only change if using a proxy
+  mcpUrl: 'https://mcp.kapruka.com/mcp', // default -- only change if using a proxy
 });
 ```
 
@@ -310,10 +576,11 @@ const sdk = new KaprukaSDK({
 
 ```typescript
 const local = new KaprukaLocal({
-  mock: true,       // boolean — offline mode
-  compact: false,   // boolean — shorter tool descriptions
-  storage: ...,     // Storage instance — MemoryStorage or SqliteStorage
-  events: { ... },  // EventHandlers — optional logging hooks
+  mock: true,       // boolean -- offline mode
+  compact: false,   // boolean -- shorter tool descriptions
+  storage: ...,     // Storage instance -- MemoryStorage or SqliteStorage
+  currencyApiUrl: 'https://api.frankfurter.dev/v2/rate/USD/LKR', // custom currency endpoint
+  events: { ... },  // EventHandlers -- optional logging hooks
 });
 ```
 
@@ -322,10 +589,24 @@ const local = new KaprukaLocal({
 ```typescript
 import { SqliteStorage } from 'kapruka-mcp/storage';
 
-const storage = new SqliteStorage(
-  './session.db',   // file path (created automatically if it doesn't exist)
-  'kapruka_cart'    // key prefix — lets you share a DB with other packages
-);
+// Async factory (recommended for ESM)
+const storage = await SqliteStorage.create('./session.db', 'kapruka_cart');
+
+// Sync constructor (for CJS)
+const storage = new SqliteStorage('./session.db', 'kapruka_cart');
+```
+
+### createStorage / createStorageAsync
+
+```typescript
+import { createStorage, createStorageAsync } from 'kapruka-mcp/storage';
+
+// Auto-detects if better-sqlite3 is available
+const storage = createStorage({ type: 'memory' });
+const storage = createStorage({ type: 'sqlite', path: './data.db' });
+
+// Async version for ESM
+const storage = await createStorageAsync({ type: 'sqlite', path: './data.db' });
 ```
 
 ### MemoryStorage
@@ -334,6 +615,22 @@ const storage = new SqliteStorage(
 import { MemoryStorage } from 'kapruka-mcp/storage';
 
 const storage = new MemoryStorage(); // data lost when process exits
+```
+
+### createRestServer options
+
+```typescript
+import { createRestServer } from 'kapruka-mcp/rest';
+
+const server = createRestServer({
+  port: 3001,            // default: 3001
+  host: '127.0.0.1',     // default: 127.0.0.1 (use 0.0.0.0 for Docker)
+  mock: true,            // default: true
+  cors: true,            // default: true
+  maxSessions: 1000,     // default: 1000
+  sessionTimeoutMs: 1800000, // default: 30 minutes
+  currencyApiUrl: '...', // optional: custom currency endpoint
+});
 ```
 
 ---
@@ -526,7 +823,7 @@ import { KaprukaLocal } from 'kapruka-mcp/local';
 
 const local = new KaprukaLocal({
   mock: true,
-  // storage defaults to MemoryStorage — no config needed
+  // storage defaults to MemoryStorage -- no config needed
 });
 ```
 
@@ -555,6 +852,8 @@ const local = new KaprukaLocal({
 | `cart:*` | Shopping cart items | Until `create_order` or manual clear |
 | `search:*` | Cached search results | 30 minutes |
 | `product:*` | Cached product details | 30 minutes |
+| `analytics:*` | Product view/cart/search counts | Permanent |
+| `alt:*` | Alternative product cache | 30 minutes |
 
 ---
 
@@ -597,7 +896,7 @@ const local = new KaprukaLocal({
 
 ---
 
-## All 14 Tools at a Glance
+## All 15 Tools at a Glance
 
 ### Discovery
 
@@ -612,15 +911,16 @@ const local = new KaprukaLocal({
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `kapruka_get_alternatives` | `query`, `product_id` | Find similar products (prevents dead ends) |
-| `kapruka_get_recommendations` | — | Suggest "goes well with" items based on cart |
+| `kapruka_get_alternatives` | `query`, `product_id`, `maxPrice`, `limit` | Find similar products (prevents dead ends) |
+| `kapruka_get_recommendations` | `limit` | Suggest "goes well with" items based on cart |
 
 ### Cart & Checkout
 
 | Tool | Key params | What it does |
 |---|---|---|
 | `kapruka_add_to_cart` | `productId`, `name`, `price`, `quantity` | Add item to local cart |
-| `kapruka_get_cart` | — | View current cart contents |
+| `kapruka_get_cart` | -- | View current cart contents |
+| `kapruka_clear_cart` | -- | Clear all items from cart |
 | `kapruka_validate_shipping` | `name`, `phone`, `address`, `city` | Validate address & phone before checkout |
 | `kapruka_create_order` | `cart`, `recipient`, `delivery`, `sender`, `gift_message` | Generate 60-min checkout link |
 
@@ -630,13 +930,25 @@ const local = new KaprukaLocal({
 |---|---|---|
 | `kapruka_check_delivery` | `city`, `product_id`, `delivery_date` | Check delivery fee and time |
 | `kapruka_track_order` | `order_number` | Track order status |
-| `kapruka_convert_currency` | `amount`, `from`, `to` | Convert LKR to USD/AED/EUR/GBP/INR |
+| `kapruka_convert_currency` | `amount`, `to` | Convert LKR to USD/AED/EUR/GBP/INR |
 
 ### Dev
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `kapruka_get_analytics` | — | Session analytics (trending products, call counts) |
+| `kapruka_get_analytics` | -- | Session analytics (trending products, call counts) |
+
+---
+
+## Package Exports
+
+| Import path | What you get |
+|---|---|
+| `kapruka-mcp` | `KaprukaSDK`, `MemoryStorage`, `SqliteStorage`, all TypeScript types |
+| `kapruka-mcp/local` | `KaprukaLocal` MCP server, `KaprukaEvents`, mock helpers |
+| `kapruka-mcp/storage` | `MemoryStorage`, `SqliteStorage`, `createStorage`, `createStorageAsync` |
+| `kapruka-mcp/rest` | `createRestServer`, REST API server |
+| `kapruka-mcp/react` | `KaprukaProvider`, `useKaprukaSearch`, `useCart`, `useCheckout`, `KaprukaClient` |
 
 ---
 
@@ -644,7 +956,7 @@ const local = new KaprukaLocal({
 
 ### "The Kapruka server is currently unreachable"
 
-Your internet is down or `mcp.kapruka.com` is temporarily offline. In mock mode, this never happens — all data is local.
+Your internet is down or `mcp.kapruka.com` is temporarily offline. In mock mode, this never happens -- all data is local.
 
 **Fix:** Check your internet connection, or switch to `mock: true` for development.
 
@@ -652,9 +964,9 @@ Your internet is down or `mcp.kapruka.com` is temporarily offline. In mock mode,
 
 The live server returned an error. Common causes:
 
-- **Rate limit exceeded** — you're making more than 60 requests/minute. Wait a minute.
-- **Invalid product_id** — the SKU doesn't exist. Use `kapruka_search_products` to find valid IDs.
-- **City code not found** — use `kapruka_list_delivery_cities` to get valid codes.
+- **Rate limit exceeded** -- you're making more than 60 requests/minute. Wait a minute.
+- **Invalid product_id** -- the SKU doesn't exist. Use `kapruka_search_products` to find valid IDs.
+- **City code not found** -- use `kapruka_list_delivery_cities` to get valid codes.
 
 ### "Kapruka tool returned invalid JSON"
 
@@ -681,7 +993,7 @@ const local = new KaprukaLocal({
 - **Node.js 18+**
 - **A C++ compiler** (Xcode on macOS, Build Tools on Windows, `build-essential` on Linux)
 
-Or just skip it — `MemoryStorage` works fine without any native dependencies.
+Or just skip it -- `MemoryStorage` works fine without any native dependencies.
 
 ### Claude Desktop can't connect
 
@@ -689,6 +1001,26 @@ Or just skip it — `MemoryStorage` works fine without any native dependencies.
 2. Restart Claude Desktop after changing the config
 3. Check the config JSON is valid (no trailing commas)
 4. Look at Claude Desktop logs for error messages
+
+### REST server won't start on port 3001
+
+Another process is using the port. Try a different port:
+
+```bash
+npx kapruka-mcp --mock --rest --port 4000
+```
+
+Or use port 0 for auto-assignment:
+
+```typescript
+const server = createRestServer({ port: 0 });
+```
+
+### React hooks not working
+
+1. Make sure your component is wrapped with `<KaprukaProvider>`
+2. Ensure `react` >= 18 is installed
+3. For REST mode, make sure the REST server is running
 
 ---
 
