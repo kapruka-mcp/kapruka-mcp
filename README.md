@@ -1,15 +1,23 @@
-# kapruka-mcp
+# kapruka-mcp — MCP Server & TypeScript SDK for Kapruka.com
+
+> **MCP (Model Context Protocol) server** and **TypeScript SDK** for building AI-powered shopping agents on [Kapruka.com](https://www.kapruka.com) — Sri Lanka's largest e-commerce platform. Works with **Claude Desktop**, **Cursor**, **VS Code Copilot**, and any MCP-compatible AI client.
 
 [![npm version](https://img.shields.io/npm/v/kapruka-mcp.svg)](https://www.npmjs.com/package/kapruka-mcp)
 [![npm](https://img.shields.io/badge/npm-kapruka--mcp-blue.svg)](https://www.npmjs.com/package/kapruka-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/kapruka-mcp/kapruka-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kapruka-mcp/kapruka-mcp/actions)
+[![MCP](https://img.shields.io/badge/MCP-Protocol-blueviolet.svg)](https://modelcontextprotocol.io)
 
-A fast, lightweight, and stateful TypeScript SDK for building conversational commerce applications on top of **Kapruka.com** -- Sri Lanka's largest e-commerce platform.
+A **Model Context Protocol (MCP) server** and **TypeScript SDK** for building conversational commerce applications, AI shopping agents, and chatbot integrations on top of **Kapruka.com** — Sri Lanka's largest e-commerce platform.
 
-Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.kapruka.com/contactUs/agentChallenge.html)** and anyone building AI shopping agents for the Sri Lankan market.
+Built for developers entering the **[Kapruka Agent Challenge 2026](https://www.kapruka.com/contactUs/agentChallenge.html)** and anyone building AI-powered e-commerce agents for the Sri Lankan market.
 
 ![kapruka-mcp Architecture](public/diagram.png)
+
+### What is MCP?
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) is an open standard that lets AI assistants like Claude, Cursor, and VS Code Copilot connect to external tools and data sources. This package implements an MCP server that exposes Kapruka.com's product catalog, shopping cart, delivery, and order management as 15 tools any AI agent can use.
 
 ---
 
@@ -595,7 +603,7 @@ npm install kapruka-mcp
 Pull requests welcome. Please open an issue first for significant changes.
 
 ```bash
-git clone https://github.com/k-rithik04/kapruka-mcp
+git clone https://github.com/kapruka-mcp/kapruka-mcp
 cd kapruka-mcp
 npm install
 npm run build
@@ -607,6 +615,12 @@ npm test
 ## License
 
 MIT (c) 2026
+
+---
+
+### Keywords
+
+`kapruka` `mcp` `model-context-protocol` `sri-lanka` `ecommerce` `shopping` `ai-agent` `llm` `typescript` `sdk` `chatbot` `conversational-ai` `claude` `cursor` `react` `nodejs` `api` `open-source` `kapruka-mcp` `mcp-server` `mcp-client` `shopping-agent` `sri-lankan-ecommerce` `kapruka-api` `mcp-tools`
 
 ---
 
